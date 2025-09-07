@@ -36,7 +36,7 @@ services:
       - ./outputs:/app/outputs
     restart: always
     ports:
-      - 3000:3000
+      - 3037:3037
 
   gpt-researcher-tests:
     image: gptresearcher/gpt-researcher-tests
@@ -65,6 +65,6 @@ services:
       - ./docs/discord-bot:/app
       - /app/node_modules
     ports:
-      - 3037:3037
+      - 3035:3035
     profiles: ["discord"]
     restart: always
