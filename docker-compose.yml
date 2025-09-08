@@ -9,13 +9,13 @@ services:
       OPENAI_API_KEY: "ollama"                       # must be non-empty
 
       # --- Explicit model choices (avoid 'gpt-5' fallback) ---
-      FAST_LLM: "ollama:gpt-oss:20b"
-      SMART_LLM: "ollama:gpt-oss:20b"
-      STRATEGIC_LLM: "ollama:gpt-oss:20b"
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL}
+      OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-snowflake-arctic-embed2}
+      EMBEDDING: ${EMBEDDING:-ollama:snowflake-arctic-embed2}
       EMBEDDING_PROVIDER: "ollama"
-      EMBEDDING: "ollama:snowflake-arctic-embed2"
-      # Back-compat for older builds (pre-EMBEDDING)
-      OLLAMA_EMBEDDING_MODEL: "snowflake-arctic-embed2"
+      FAST_LLM: ${FAST_LLM:-ollama:gpt-oss:20b}
+      SMART_LLM: ${SMART_LLM:-ollama:gpt-oss:20b}
+      STRATEGIC_LLM: ${STRATEGIC_LLM:-ollama:gpt-oss:20b}
 
       # --- Search providers ---
       RETRIEVER: "${RETRIEVER:-tavily,searx}"        # note the correct var name + quotes
@@ -24,7 +24,7 @@ services:
 
       # --- Logging / Langsmith off (stop the 403 spam) ---
       LOGGING_LEVEL: "INFO"
-      LANGCHAIN_TRACING_V2: "false"
+      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
       LANGCHAIN_API_KEY: ""
 
     extra_hosts:
