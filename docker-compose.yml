@@ -47,9 +47,9 @@ services:
     stdin_open: true
     environment:
       CHOKIDAR_USEPOLLING: "true"
-      LOGGING_LEVEL: INFO
-      NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID}
-      NEXT_PUBLIC_GPTR_API_URL: ${NEXT_PUBLIC_GPTR_API_URL}
+      LOGGING_LEVEL: "INFO"
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: "${NEXT_PUBLIC_GA_MEASUREMENT_ID}"
+      NEXT_PUBLIC_GPTR_API_URL: "http://gpt-researcher:8000"   # <— change from :8067 to :8000
     build:
       dockerfile: Dockerfile.dev
       context: frontend/nextjs
@@ -60,7 +60,7 @@ services:
       - ./outputs:/app/outputs
     restart: always
     ports:
-      - 3037:3000
+      - "3037:3000"
 
   gpt-researcher-tests:
     image: gptresearcher/gpt-researcher-tests
