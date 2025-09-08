@@ -14,6 +14,8 @@ services:
       STRATEGIC_LLM: "ollama:gpt-oss:20b"
       EMBEDDING_PROVIDER: "ollama"
       EMBEDDING: "ollama:snowflake-arctic-embed2"
+      # Back-compat for older builds (pre-EMBEDDING)
+      OLLAMA_EMBEDDING_MODEL: "snowflake-arctic-embed2"
 
       # --- Search providers ---
       RETRIEVER: "${RETRIEVER:-tavily,searx}"        # note the correct var name + quotes
