@@ -33,8 +33,17 @@ services:
       context: frontend/nextjs
     volumes:
       - /app/node_modules
-      - ./frontend/nextjs:/app
-      - ./frontend/nextjs/.next:/app/.next
+      - ./frontend/nextjs/src:/app/src
+      - ./frontend/nextjs/public:/app/public
+      - ./frontend/nextjs/components:/app/components
+      - ./frontend/nextjs/app:/app/app
+      - ./frontend/nextjs/styles:/app/styles
+      - ./frontend/nextjs/types:/app/types
+      - ./frontend/nextjs/utils:/app/utils
+      - ./frontend/nextjs/hooks:/app/hooks
+      - ./frontend/nextjs/helpers:/app/helpers
+      - ./frontend/nextjs/config:/app/config
+      - ./frontend/nextjs/actions:/app/actions
       - ./outputs:/app/outputs
     restart: always
     ports:
