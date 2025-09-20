@@ -5,11 +5,10 @@ services:
     build: ./
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL}
       TAVILY_API_KEY: ${TAVILY_API_KEY}
       LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY}
       LOGGING_LEVEL: INFO
-      PORT: 8067
+      PORT: 8000
     volumes:
       - ${PWD}/my-docs:/usr/src/app/my-docs:rw
       - ${PWD}/outputs:/usr/src/app/outputs:rw
@@ -34,7 +33,7 @@ services:
       context: frontend/nextjs
     volumes:
       - /app/node_modules
-      - ./frontend/nextjs:/app/src
+      - ./frontend/nextjs:/app
       - ./frontend/nextjs/.next:/app/.next
       - ./outputs:/app/outputs
     restart: always
@@ -46,7 +45,6 @@ services:
     build: ./
     environment: 
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL}
       TAVILY_API_KEY: ${TAVILY_API_KEY}
       LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY}
       LOGGING_LEVEL: INFO
