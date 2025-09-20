@@ -35,8 +35,8 @@ services:
       - /app/node_modules
       - ./frontend/nextjs/src:/app/src
       - ./frontend/nextjs/public:/app/public
-      - ./frontend/nextjs/components:/app/components
       - ./frontend/nextjs/app:/app/app
+      - ./frontend/nextjs/components:/app/components
       - ./frontend/nextjs/styles:/app/styles
       - ./frontend/nextjs/types:/app/types
       - ./frontend/nextjs/utils:/app/utils
