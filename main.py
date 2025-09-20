@@ -32,6 +32,8 @@ from backend.server.server import app
 
 if __name__ == "__main__":
     import uvicorn
+    import os
     
     logger.info("Starting server...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8067))
+    uvicorn.run(app, host="0.0.0.0", port=port)

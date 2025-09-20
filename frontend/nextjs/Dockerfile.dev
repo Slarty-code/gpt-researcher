@@ -3,4 +3,7 @@ WORKDIR /app
 COPY ./package.json ./
 RUN npm install --legacy-peer-deps
 COPY . .
+ARG PORT=3037
+ENV PORT=${PORT}
+EXPOSE ${PORT}
 CMD ["npm", "run", "dev"]
