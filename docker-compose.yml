@@ -55,7 +55,7 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       LOGGING_LEVEL: INFO
       NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID}
-      NEXT_PUBLIC_GPTR_API_URL: ${NEXT_PUBLIC_GPTR_API_URL}
+      NEXT_PUBLIC_GPTR_API_URL: "http://gpt-researcher:8000"
       PORT: 3037 
     build:
       dockerfile: Dockerfile.dev
