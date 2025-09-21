@@ -60,6 +60,7 @@ services:
     build:
       dockerfile: Dockerfile.dev
       context: frontend/nextjs
+      no_cache: true
     volumes:
       - /app/node_modules
       - ./frontend/nextjs:/app/src
