@@ -6,12 +6,32 @@ services:
       context: ./
       no_cache: true
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL}
-      TAVILY_API_KEY: ${TAVILY_API_KEY}
-      LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY}
-      LOGGING_LEVEL: INFO
-      PORT: 8067
+      # Ollama Configuration
+      OPENAI_API_KEY: "ollama"
+      OPENAI_BASE_URL: "http://host.docker.internal:11434/v1"
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      
+      # LLM Models (using your Ollama models)
+      FAST_LLM: "ollama:gpt-oss:20b"
+      SMART_LLM: "ollama:gpt-oss:20b"
+      STRATEGIC_LLM: "ollama:gpt-oss:20b"
+      
+      # Embedding Model
+      EMBEDDING: "ollama:snowflake-arctic-embed2"
+      OLLAMA_EMBEDDING_MODEL: "snowflake-arctic-embed2"
+      EMBEDDING_PROVIDER: "ollama"
+      
+      # Search Configuration
+      TAVILY_API_KEY: "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"
+      
+      # GPT Researcher Configuration
+      LOGGING_LEVEL: "INFO"
+      PORT: "8000"
+      
+      # Optional API keys
+      LANGCHAIN_API_KEY: ""
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ${PWD}/my-docs:/usr/src/app/my-docs:rw
       - ${PWD}/outputs:/usr/src/app/outputs:rw
