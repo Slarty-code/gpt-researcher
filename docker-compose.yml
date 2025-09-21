@@ -2,12 +2,10 @@
 services:
   gpt-researcher:
     pull_policy: always
-    image: gptresearcher/gpt-researcher:rebuild-$(date +%s)
+    image: gptresearcher/gpt-researcher
     build: 
       context: ./
       no_cache: true
-      args:
-        - BUILD_DATE=$(date +%s)
     environment:
       # Ollama Configuration
       OPENAI_API_KEY: "ollama"
