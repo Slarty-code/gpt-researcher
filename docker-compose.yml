@@ -1,8 +1,10 @@
 services:
   gpt-researcher:
-    pull_policy: build
+    pull_policy: always
     image: gptresearcher/gpt-researcher
-    build: ./
+    build: 
+      context: ./
+      no_cache: true
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL}
