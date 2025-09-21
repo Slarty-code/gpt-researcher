@@ -22,6 +22,7 @@
     "dev:lib": "rollup -c -w"
   },
   "dependencies": {
+    "@chakra-ui/icons": "^2.1.1",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@langchain/langgraph-sdk": "^0.0.1-rc.12",
