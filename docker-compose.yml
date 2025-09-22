@@ -1,8 +1,7 @@
 # Force rebuild - langchain-ollama package needed
 services:
   gpt-researcher:
-    pull_policy: always
-    image: gptresearcher/gpt-researcher
+    pull_policy: build
     build: 
       context: ./
       no_cache: true
