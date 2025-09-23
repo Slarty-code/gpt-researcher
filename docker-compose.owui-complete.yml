@@ -82,29 +82,14 @@ services:
     networks:
       - gpt-researcher-owui-complete
 
-  # OWUI Frontend
-  owui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: owui-owui-complete
-    ports:
-      - "8083:8080"  # OWUI Complete stack uses 8080-8089 range
-    volumes:
-      - owui_data:/app/backend/data
-    environment:
-      - OPENAI_API_BASE_URL=http://owui-bridge:8002
-      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-your-secret-key-here}
-    depends_on:
-      - owui-bridge
-    restart: unless-stopped
-    networks:
-      - gpt-researcher-owui-complete
+  # OWUI runs separately - not included in this stack
 
   # ChromaDB
   chromadb:
     image: chromadb/chroma:latest
     container_name: chromadb-owui-complete
     ports:
-      - "8084:8000"  # OWUI Complete stack uses 8080-8089 range
+      - "8083:8000"  # OWUI Complete stack uses 8080-8089 range
     volumes:
       - chroma_data:/chroma/chroma
     environment:
@@ -119,7 +104,7 @@ services:
     image: redis:7-alpine
     container_name: redis-owui-complete
     ports:
-      - "8085:6379"  # OWUI Complete stack uses 8080-8089 range
+      - "8084:6379"  # OWUI Complete stack uses 8080-8089 range
     volumes:
       - redis_data:/data
     restart: unless-stopped
@@ -127,7 +112,6 @@ services:
       - gpt-researcher-owui-complete
 
 volumes:
-  owui_data:
     driver: local
   chroma_data:
     driver: local

@@ -7,8 +7,8 @@
 | **Basic** | 8067 | GPT Researcher | 8067 |
 | **Enhanced** | 8068-8069 | GPT Researcher + Legal Enhancement | 8068, 8069 |
 | **OWUI Bridge** | 8070-8072 | GPT Researcher + Legal Enhancement + OWUI Bridge | 8070, 8071, 8072 |
-| **OWUI Complete** | 8080-8085 | All services + OWUI + ChromaDB + Redis | 8080, 8081, 8082, 8083, 8084, 8085 |
-| **Full Stack** | 8000-8039 | All services (uses standard ports) | 8000, 8001, 8002, 3000, 8003, 6379 |
+| **OWUI Complete** | 8080-8084 | GPT Researcher + Legal Enhancement + OWUI Bridge + ChromaDB + Redis | 8080, 8081, 8082, 8083, 8084 |
+| **Original** | 8067 | GPT Researcher (original) | 8067 |
 
 ## **🎯 Quick Reference**
 
@@ -36,14 +36,12 @@
 - **GPT Researcher:** `http://localhost:8080`
 - **Legal Enhancement:** `http://localhost:8081`
 - **OWUI Bridge:** `http://localhost:8082`
-- **OWUI Frontend:** `http://localhost:8083`
-- **ChromaDB:** `http://localhost:8084`
-- **Redis:** `localhost:8085`
+- **ChromaDB:** `http://localhost:8083`
+- **Redis:** `localhost:8084`
 - **Health Checks:**
   - `http://localhost:8080/health`
   - `http://localhost:8081/health`
   - `http://localhost:8082/health`
-  - `http://localhost:8083`
 
 ## **🚀 Running Multiple Stacks**
 

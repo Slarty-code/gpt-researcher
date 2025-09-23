@@ -1,27 +1,53 @@
 version: '3.8'
 
 services:
-  # GPT Researcher Core
+  # GPT Researcher Core - Using original configuration
   gpt-researcher:
-    build:
-      context: .
-      dockerfile: Dockerfile.gpt-researcher
+    pull_policy: build
+    build: 
+      context: ./
+      no_cache: true
     container_name: gpt-researcher-enhanced
-    ports:
-      - "8068:8000"  # Enhanced stack uses 8068-8077 range
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - RESEARCH_TYPE=${RESEARCH_TYPE:-research_report}
-      - MAX_ITERATIONS=${MAX_ITERATIONS:-3}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
+      # Ollama Configuration
+      OPENAI_API_KEY: "ollama"
+      OPENAI_BASE_URL: "http://host.docker.internal:11434/v1"
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      
+      # LLM Models (using your Ollama models)
+      FAST_LLM: "ollama:gpt-oss:20b"
+      SMART_LLM: "ollama:gpt-oss:20b"
+      STRATEGIC_LLM: "ollama:gpt-oss:20b"
+      
+      # Embedding Model
+      EMBEDDING: "ollama:snowflake-arctic-embed2"
+      OLLAMA_EMBEDDING_MODEL: "snowflake-arctic-embed2"
+      EMBEDDING_PROVIDER: "ollama"
+      
+      # Search Configuration
+      TAVILY_API_KEY: "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"
+      
+      # GPT Researcher Configuration
+      LOGGING_LEVEL: "INFO"
+      PORT: "8000"
+      
+      # Optional API keys
+      LANGCHAIN_API_KEY: ""
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      /bin/sh -c "
+      pip install langchain-ollama>=0.3.3 &&
+      python -m uvicorn main:app --host 0.0.0.0 --port 8000
+      "
+    volumes:
+      - ${PWD}/my-docs:/usr/src/app/my-docs:rw
+      - ${PWD}/outputs:/usr/src/app/outputs:rw
+      - ${PWD}/logs:/usr/src/app/logs:rw
+    user: root
+    restart: always
+    ports:
+      - 8068:8000  # Enhanced stack uses 8068-8077 range
     networks:
       - gpt-researcher-enhanced
 
