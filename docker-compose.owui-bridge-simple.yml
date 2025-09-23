@@ -1,83 +1,59 @@
 version: '3.8'
 
 services:
-  # GPT Researcher Core - Using original configuration
   gpt-researcher:
-    pull_policy: build
-    build: 
-      context: ./
-      no_cache: true
-    container_name: gpt-researcher-owui-simple
-    environment:
-      # Ollama Configuration
-      OPENAI_API_KEY: "ollama"
-      OPENAI_BASE_URL: "http://host.docker.internal:11434/v1"
-      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
-      
-      # LLM Models (using your Ollama models)
-      FAST_LLM: "ollama:gpt-oss:20b"
-      SMART_LLM: "ollama:gpt-oss:20b"
-      STRATEGIC_LLM: "ollama:gpt-oss:20b"
-      
-      # Embedding Model
-      EMBEDDING: "ollama:snowflake-arctic-embed2"
-      OLLAMA_EMBEDDING_MODEL: "snowflake-arctic-embed2"
-      EMBEDDING_PROVIDER: "ollama"
-      
-      # Search Configuration
-      TAVILY_API_KEY: "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"
-      
-      # GPT Researcher Configuration
-      LOGGING_LEVEL: "INFO"
-      PORT: "8000"
-      
-      # Optional API keys
-      LANGCHAIN_API_KEY: ""
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    command: >
-      /bin/sh -c "
-      pip install langchain-ollama>=0.3.3 &&
-      python -m uvicorn main:app --host 0.0.0.0 --port 8000
-      "
-    volumes:
-      - ${PWD}/my-docs:/usr/src/app/my-docs:rw
-      - ${PWD}/outputs:/usr/src/app/outputs:rw
-      - ${PWD}/logs:/usr/src/app/logs:rw
-    user: root
-    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile.gpt-researcher
     ports:
-      - 8070:8000  # OWUI Bridge stack uses 8070-8079 range
+      - "8070:8000"
+    environment:
+      - OPENAI_API_KEY=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.1:8b
+    depends_on:
+      - ollama
     networks:
-      - gpt-researcher-owui-simple
+      - gpt-researcher-network
 
-  # OWUI Bridge (simplified - no legal enhancement)
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - gpt-researcher-network
+
+  legal-enhancement:
+    build:
+      context: .
+      dockerfile: Dockerfile.legal-enhancement-simple
+    ports:
+      - "8071:8001"
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - gpt-researcher-network
+
   owui-bridge:
     build:
       context: .
       dockerfile: Dockerfile.owui-bridge
-    container_name: owui-bridge-simple
     ports:
-      - "8072:8002"  # OWUI Bridge stack uses 8070-8079 range
-    volumes:
-      - ./owui_gpt_researcher_bridge.py:/app/owui_gpt_researcher_bridge.py
-      - ./data:/app/data
-      - ./logs:/app/logs
+      - "8072:8002"
     environment:
       - GPT_RESEARCHER_URL=http://gpt-researcher:8000
       - LEGAL_ENHANCEMENT_URL=http://legal-enhancement:8001
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-    networks:
-      - gpt-researcher-owui-simple
     depends_on:
       - gpt-researcher
+      - legal-enhancement
+    networks:
+      - gpt-researcher-network
+
+volumes:
+  ollama_data:
 
 networks:
-  gpt-researcher-owui-simple:
+  gpt-researcher-network:
     driver: bridge
-    name: gpt-researcher-owui-simple

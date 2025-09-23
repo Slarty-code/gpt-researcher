@@ -1,0 +1,53 @@
+# Legal Document Enhancement Container - Simplified Version
+# This version focuses on core functionality without heavy ML dependencies
+
+FROM python:3.11-slim
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Set working directory
+WORKDIR /app
+
+# Install minimal system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    poppler-utils \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy GPT Researcher requirements first (for compatibility)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy and install simplified legal enhancement requirements
+COPY legal_document_enhancement/requirements-simple.txt legal_requirements.txt
+RUN pip install --no-cache-dir -r legal_requirements.txt
+
+# Copy the legal enhancement module
+COPY legal_document_enhancement/ ./legal_document_enhancement/
+
+# Copy GPT Researcher code (for integration)
+COPY gpt_researcher/ ./gpt_researcher/
+COPY backend/ ./backend/
+
+# Create API server for legal enhancement
+COPY legal_api_server.py .
+
+# Create startup script
+COPY start_legal_enhancement.sh .
+RUN chmod +x start_legal_enhancement.sh
+
+# Expose port
+EXPOSE 8001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Run the legal enhancement API server
+CMD ["./start_legal_enhancement.sh"]

@@ -82,24 +82,7 @@ services:
     networks:
       - gpt-researcher-network
 
-  # Optional: OWUI Frontend (if you want to include it)
-  owui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: owui
-    ports:
-      - "3000:8080"
-    volumes:
-      - owui_data:/app/backend/data
-    environment:
-      - OPENAI_API_BASE_URL=http://owui-bridge:8002
-      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-your-secret-key-here}
-    depends_on:
-      - owui-bridge
-    restart: unless-stopped
-    networks:
-      - gpt-researcher-network
-
-  # Optional: Vector Database (if using external vector store)
+   # Optional: Vector Database (if using external vector store)
   chromadb:
     image: chromadb/chroma:latest
     container_name: chromadb
