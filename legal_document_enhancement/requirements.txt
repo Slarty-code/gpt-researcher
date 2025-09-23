@@ -1,24 +1,21 @@
 # Legal Document Enhancement Requirements
-# These are additional requirements for the enhanced document processing
+# Full capabilities for advanced document processing and semantic chunking
 
-# Document processing and OCR
-paddleocr>=2.6.1.3
-paddlepaddle>=2.5.2
-pytesseract>=0.3.10
-pdf2image>=1.16.3
-pillow>=11.2.1
-camelot-py[cv]>=0.10.1
-
-# Layout analysis
-transformers>=4.38.0
+# Core dependencies for advanced document processing and semantic chunking
 torch>=2.0.0
-
-# Semantic chunking
+transformers>=4.38.0
 sentence-transformers>=2.2.2
-
-# Data handling
-numpy>=2.2.6
+paddleocr>=2.6.1.3
+paddlepaddle>=2.5.2 # CPU version, can be replaced with paddlepaddle-gpu if needed
+pdf2image>=1.16.3
+pytesseract>=0.3.10
+Pillow>=10.2.0
+camelot-py[cv]>=0.11.0 # [cv] for OpenCV dependency
+numpy>=1.26.4
 pandas>=2.2.1
+langchain-community>=0.3.29 # For document loaders
+langchain-core>=0.3.76
+langchain>=0.3.27
 
 # Email processing
 # Note: Email processing uses built-in Python libraries (email, quopri, base64)
