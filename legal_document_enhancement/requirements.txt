@@ -1,0 +1,35 @@
+# Legal Document Enhancement Requirements
+# These are additional requirements for the enhanced document processing
+
+# Document processing and OCR
+paddleocr>=2.6.1.3
+paddlepaddle>=2.5.2
+pytesseract>=0.3.10
+pdf2image>=1.16.3
+pillow>=11.2.1
+camelot-py[cv]>=0.10.1
+
+# Layout analysis
+transformers>=4.38.0
+torch>=2.0.0
+
+# Semantic chunking
+sentence-transformers>=2.2.2
+
+# Data handling
+numpy>=2.2.6
+pandas>=2.2.1
+
+# Email processing
+# Note: Email processing uses built-in Python libraries (email, quopri, base64)
+# No additional dependencies required for MSG/EML processing
+
+# Optional: PST file processing (safe to install)
+libpff-python>=20231205  # PST file support - tested compatible
+
+# Archive processing (ZIP/RAR support)
+rarfile>=4.0  # RAR file support - optional dependency
+
+# Optional: Advanced OCR
+# layoutparser>=0.3.4
+# detectron2>=0.6

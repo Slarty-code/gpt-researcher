@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # Your existing GPT Researcher container (unchanged)
+  gpt-researcher:
+    image: gpt-researcher:latest
+    container_name: gpt-researcher-main
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GPT_RESEARCHER_URL=http://gpt-researcher:8000
+    volumes:
+      - gpt-data:/app/data
+      - gpt-docs:/app/my-docs
+    networks:
+      - gpt-network
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gpt-researcher.rule=Host(`gpt-researcher.yourdomain.com`)"
+      - "traefik.http.routers.gpt-researcher.tls=true"
+      - "traefik.http.routers.gpt-researcher.tls.certresolver=letsencrypt"
+
+  # New Legal Enhancement container
+  legal-enhancement:
+    build:
+      context: .
+      dockerfile: Dockerfile.legal-enhancement
+    container_name: legal-enhancement-api
+    ports:
+      - "8001:8001"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GPT_RESEARCHER_URL=http://gpt-researcher:8000
+      - LEGAL_ENHANCEMENT_URL=http://legal-enhancement:8001
+      - LEGAL_EMBEDDING_MODEL=${LEGAL_EMBEDDING_MODEL:-BAAI/bge-large-en-v1.5}
+      - LEGAL_SIMILARITY_THRESHOLD=${LEGAL_SIMILARITY_THRESHOLD:-0.75}
+      - OCR_LANGUAGE=${OCR_LANGUAGE:-en}
+      - USE_GPU=${USE_GPU:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - gpt-data:/app/data
+      - gpt-docs:/app/my-docs
+      - legal-enhancement-code:/app/legal_document_enhancement
+    networks:
+      - gpt-network
+    depends_on:
+      - gpt-researcher
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.legal-enhancement.rule=Host(`legal-api.yourdomain.com`)"
+      - "traefik.http.routers.legal-enhancement.tls=true"
+      - "traefik.http.routers.legal-enhancement.tls.certresolver=letsencrypt"
+
+  # Optional: Legal Enhancement Web UI
+  legal-enhancement-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.legal-ui
+    container_name: legal-enhancement-ui
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8001
+      - REACT_APP_GPT_RESEARCHER_URL=http://localhost:8000
+    networks:
+      - gpt-network
+    depends_on:
+      - legal-enhancement
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.legal-ui.rule=Host(`legal-ui.yourdomain.com`)"
+      - "traefik.http.routers.legal-ui.tls=true"
+      - "traefik.http.routers.legal-ui.tls.certresolver=letsencrypt"
+
+networks:
+  gpt-network:
+    driver: bridge
+
+volumes:
+  gpt-data:
+    driver: local
+  gpt-docs:
+    driver: local
+  legal-enhancement-code:
+    driver: local

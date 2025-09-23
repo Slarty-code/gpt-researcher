@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  # GPT Researcher Core
+  gpt-researcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpt-researcher
+    container_name: gpt-researcher-owui-complete
+    ports:
+      - "8080:8000"  # OWUI Complete stack uses 8080-8089 range
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RESEARCH_TYPE=${RESEARCH_TYPE:-research_report}
+      - MAX_ITERATIONS=${MAX_ITERATIONS:-3}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - gpt-researcher-owui-complete
+
+  # Legal Document Enhancement
+  legal-enhancement:
+    build:
+      context: .
+      dockerfile: Dockerfile.legal-enhancement
+    container_name: legal-enhancement-owui-complete
+    ports:
+      - "8081:8001"  # OWUI Complete stack uses 8080-8089 range
+    volumes:
+      - ./legal_document_enhancement:/app/legal_document_enhancement
+      - ./gpt_researcher:/app/gpt_researcher
+      - ./backend:/app/backend
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - USE_ENHANCED_PROCESSING=${USE_ENHANCED_PROCESSING:-true}
+      - USE_SEMANTIC_CHUNKING=${USE_SEMANTIC_CHUNKING:-true}
+      - EMBED_MODEL_NAME=${EMBED_MODEL_NAME:-BAAI/bge-large-en-v1.5}
+      - SIMILARITY_THRESHOLD=${SIMILARITY_THRESHOLD:-0.75}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - gpt-researcher-owui-complete
+
+  # OWUI Bridge
+  owui-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.owui-bridge
+    container_name: owui-bridge-owui-complete
+    ports:
+      - "8082:8002"  # OWUI Complete stack uses 8080-8089 range
+    volumes:
+      - ./owui_gpt_researcher_bridge.py:/app/owui_gpt_researcher_bridge.py
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - GPT_RESEARCHER_URL=http://gpt-researcher:8000
+      - LEGAL_ENHANCEMENT_URL=http://legal-enhancement:8001
+      - BRIDGE_PORT=8002
+    depends_on:
+      - gpt-researcher
+      - legal-enhancement
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - gpt-researcher-owui-complete
+
+  # OWUI Frontend
+  owui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: owui-owui-complete
+    ports:
+      - "8083:8080"  # OWUI Complete stack uses 8080-8089 range
+    volumes:
+      - owui_data:/app/backend/data
+    environment:
+      - OPENAI_API_BASE_URL=http://owui-bridge:8002
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-your-secret-key-here}
+    depends_on:
+      - owui-bridge
+    restart: unless-stopped
+    networks:
+      - gpt-researcher-owui-complete
+
+  # ChromaDB
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chromadb-owui-complete
+    ports:
+      - "8084:8000"  # OWUI Complete stack uses 8080-8089 range
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+    restart: unless-stopped
+    networks:
+      - gpt-researcher-owui-complete
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: redis-owui-complete
+    ports:
+      - "8085:6379"  # OWUI Complete stack uses 8080-8089 range
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - gpt-researcher-owui-complete
+
+volumes:
+  owui_data:
+    driver: local
+  chroma_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  gpt-researcher-owui-complete:
+    driver: bridge
+    name: gpt-researcher-owui-complete
