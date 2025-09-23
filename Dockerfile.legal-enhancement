@@ -4,20 +4,13 @@
 FROM python:3.11-slim
 
 # Install system dependencies for OCR and document processing
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
     tesseract-ocr-eng \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
-    libgcc-s1 \
     poppler-utils \
-    libopencv-dev \
-    python3-opencv \
-    && rm -rf /var/lib/apt/lists/*
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Set working directory
 WORKDIR /app
@@ -26,8 +19,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy and install legal enhancement requirements
-COPY legal_document_enhancement/requirements.txt legal_requirements.txt
+# Copy and install legal enhancement requirements (minimal to avoid build issues)
+COPY legal_document_enhancement/requirements-minimal.txt legal_requirements.txt
 RUN pip install --no-cache-dir -r legal_requirements.txt
 
 # Install PST file support (safe, no conflicts)

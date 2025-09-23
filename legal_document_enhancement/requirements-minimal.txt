@@ -1,0 +1,27 @@
+# Minimal Legal Document Enhancement Requirements
+# These are the essential requirements that won't cause build issues
+
+# Basic document processing
+pdf2image>=1.16.3
+pytesseract>=0.3.10
+Pillow>=10.2.0
+numpy>=1.26.4
+pandas>=2.2.1
+
+# LangChain for document handling
+langchain-community>=0.3.29
+langchain-core>=0.3.76
+langchain>=0.3.27
+
+# Email processing (built-in Python libraries)
+# No additional dependencies required for MSG/EML processing
+
+# Optional: PST file processing (safe to install)
+libpff-python>=20231205
+
+# Archive processing (ZIP/RAR support)
+rarfile>=4.0
+
+# Note: Advanced processing dependencies (torch, transformers, etc.) 
+# are commented out to avoid build issues. They can be installed
+# later if needed for specific use cases.
