@@ -14,7 +14,7 @@ services:
       # LLM Models (using your Ollama models)
       FAST_LLM: "ollama:gpt-oss:20b"
       SMART_LLM: "ollama:gpt-oss:20b"
-      STRATEGIC_LLM: "ollama:gpt-oss:20b"
+      STRATEGIC_LLM: "ollama:qwen3-coder:latest"
       
       # Embedding Model
       EMBEDDING: "ollama:snowflake-arctic-embed2"
