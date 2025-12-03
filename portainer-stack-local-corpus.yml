@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  # GPT Researcher with Local Corpus Support
+  gpt-researcher-local:
+    pull_policy: build
+    build: 
+      context: ./
+      no_cache: true
+    container_name: gpt-researcher-local-corpus
+    environment:
+      # Ollama Configuration
+      OPENAI_API_KEY: "ollama"
+      OPENAI_BASE_URL: "http://host.docker.internal:11434/v1"
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      
+      # LLM Models (using your Ollama models)
+      FAST_LLM: "ollama:gpt-oss:20b"
+      SMART_LLM: "ollama:gpt-oss:20b"
+      STRATEGIC_LLM: "ollama:qwen3-coder:latest"
+      
+      # Embedding Model
+      EMBEDDING: "ollama:snowflake-arctic-embed2"
+      OLLAMA_EMBEDDING_MODEL: "snowflake-arctic-embed2"
+      EMBEDDING_PROVIDER: "ollama"
+      
+      # Search Configuration
+      TAVILY_API_KEY: "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"
+      
+      # GPT Researcher Configuration
+      LOGGING_LEVEL: "INFO"
+      PORT: "8000"
+      DOC_PATH: "/usr/src/app/my-docs"
+      
+      # Apache Tika Configuration for OCR
+      TIKA_SERVER_URL: "http://host.docker.internal:9998"
+      
+      # Optional API keys
+      LANGCHAIN_API_KEY: ""
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      /bin/sh -c "
+      pip install langchain-ollama>=0.3.3 &&
+      python -m uvicorn main:app --host 0.0.0.0 --port 8000
+      "
+    volumes:
+      # Main document directory (read-write for outputs)
+      - gpt-local-docs:/usr/src/app/my-docs:rw
+      
+      # Multiple corpus directories (read-only for security)
+      - corpus1:/usr/src/app/my-docs/corpus1:ro
+      - corpus2:/usr/src/app/my-docs/corpus2:ro
+      - corpus3:/usr/src/app/my-docs/corpus3:ro
+      
+      # Output and log directories
+      - gpt-outputs:/usr/src/app/outputs:rw
+      - gpt-logs:/usr/src/app/logs:rw
+    user: root
+    restart: always
+    ports:
+      - "8068:8000"  # Different port to avoid conflicts
+    networks:
+      - gpt-local-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gpt-researcher-local.rule=Host(`gpt-local.yourdomain.com`)"
+      - "traefik.http.routers.gpt-researcher-local.tls=true"
+      - "traefik.http.routers.gpt-researcher-local.tls.certresolver=letsencrypt"
+      - "traefik.http.services.gpt-researcher-local.loadbalancer.server.port=8000"
+
+  # Optional: NextJS Frontend for Local Corpus
+  gptr-nextjs-local:
+    pull_policy: build
+    image: gptresearcher/gptr-nextjs
+    container_name: gptr-nextjs-local-corpus
+    stdin_open: true
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+      LOGGING_LEVEL: INFO
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID}
+      NEXT_PUBLIC_GPTR_API_URL: "http://gpt-researcher-local:8000"
+      PORT: 3038
+    build:
+      dockerfile: Dockerfile.dev
+      context: frontend/nextjs
+      no_cache: true
+    volumes:
+      - /app/node_modules
+      - ./frontend/nextjs:/app/src
+      - ./frontend/nextjs/.next:/app/.next
+      - gpt-outputs:/app/outputs
+    restart: always
+    ports:
+      - "3038:3038"
+    networks:
+      - gpt-local-network
+    depends_on:
+      - gpt-researcher-local
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gptr-nextjs-local.rule=Host(`gpt-ui-local.yourdomain.com`)"
+      - "traefik.http.routers.gptr-nextjs-local.tls=true"
+      - "traefik.http.routers.gptr-nextjs-local.tls.certresolver=letsencrypt"
+
+networks:
+  gpt-local-network:
+    driver: bridge
+    external: false
+
+volumes:
+  # Main document storage
+  gpt-local-docs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /host/path/to/your/main/docs  # CHANGE THIS PATH
+  
+  # Corpus volumes - these need to be bound to your actual corpus directories
+  corpus1:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /host/path/to/corpus1  # CHANGE THIS PATH
+  
+  corpus2:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /host/path/to/corpus2  # CHANGE THIS PATH
+  
+  corpus3:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /host/path/to/corpus3  # CHANGE THIS PATH
+  
+  # Output and log volumes
+  gpt-outputs:
+    driver: local
+  gpt-logs:
+    driver: local
+

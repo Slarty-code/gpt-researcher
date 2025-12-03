@@ -27,6 +27,10 @@ services:
       # GPT Researcher Configuration
       LOGGING_LEVEL: "INFO"
       PORT: "8000"
+      DOC_PATH: "/usr/src/app/my-docs"
+      
+      # Apache Tika Configuration for OCR
+      TIKA_SERVER_URL: "http://host.docker.internal:9998"
       
       # Optional API keys
       LANGCHAIN_API_KEY: ""
