@@ -1,0 +1,83 @@
+# OWUI Bridge with Legal Enhancement - Using Original GPT Researcher Approach
+# This uses the original GPT Researcher Dockerfile and adds legal enhancement as a separate service
+
+version: '3.8'
+
+services:
+  gpt-researcher:
+    pull_policy: build
+    build: 
+      context: ./
+      no_cache: true
+    environment:
+      # Ollama Configuration
+      OPENAI_API_KEY: "ollama"
+      OPENAI_BASE_URL: "http://host.docker.internal:11434/v1"
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      
+      # LLM Models (using your Ollama models)
+      FAST_LLM: "ollama:gpt-oss:20b"
+      SMART_LLM: "ollama:gpt-oss:20b"
+      STRATEGIC_LLM: "ollama:gpt-oss:20b"
+      
+      # Embedding Model
+      EMBEDDING: "ollama:snowflake-arctic-embed2"
+      OLLAMA_EMBEDDING_MODEL: "snowflake-arctic-embed2"
+      EMBEDDING_PROVIDER: "ollama"
+      
+      # Search Configuration
+      TAVILY_API_KEY: "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"
+      
+      # GPT Researcher Configuration
+      LOGGING_LEVEL: "INFO"
+      PORT: "8000"
+      
+      # Optional API keys
+      LANGCHAIN_API_KEY: ""
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      /bin/sh -c "
+      pip install langchain-ollama>=0.3.3 &&
+      python -m uvicorn main:app --host 0.0.0.0 --port 8000
+      "
+    volumes:
+      - ${PWD}/my-docs:/usr/src/app/my-docs:rw
+      - ${PWD}/outputs:/usr/src/app/outputs:rw
+      - ${PWD}/logs:/usr/src/app/logs:rw
+    user: root
+    restart: always
+    ports:
+      - 8070:8000
+    networks:
+      - gpt-researcher-network
+
+  legal-enhancement:
+    build:
+      context: .
+      dockerfile: Dockerfile.legal-enhancement-minimal
+    ports:
+      - "8071:8001"
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - gpt-researcher-network
+
+  owui-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.owui-bridge
+    ports:
+      - "8072:8002"
+    environment:
+      - GPT_RESEARCHER_URL=http://gpt-researcher:8000
+      - LEGAL_ENHANCEMENT_URL=http://legal-enhancement:8001
+    depends_on:
+      - gpt-researcher
+      - legal-enhancement
+    networks:
+      - gpt-researcher-network
+
+networks:
+  gpt-researcher-network:
+    driver: bridge

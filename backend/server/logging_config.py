@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -47,8 +48,8 @@ def setup_research_logging():
     log_file = logs_dir / f"research_{timestamp}.log"
     json_file = logs_dir / f"research_{timestamp}.json"
     
-    # Configure file handler for research logs
-    file_handler = logging.FileHandler(log_file)
+    # Configure file handler for research logs (UTF-8 for Unicode on Windows)
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
     
@@ -62,8 +63,13 @@ def setup_research_logging():
     # Add file handler
     research_logger.addHandler(file_handler)
     
-    # Add stream handler for console output
-    console_handler = logging.StreamHandler()
+    # Stream handler: use UTF-8 on Windows to avoid UnicodeEncodeError (e.g. U+2011)
+    if sys.platform == "win32":
+        import io
+        _stderr_utf8 = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+        console_handler = logging.StreamHandler(_stderr_utf8)
+    else:
+        console_handler = logging.StreamHandler()
     console_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
     research_logger.addHandler(console_handler)
     

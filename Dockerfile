@@ -40,7 +40,7 @@ FROM gpt-researcher-install AS gpt-researcher
 # Basic server configuration
 ARG HOST=0.0.0.0
 ENV HOST=${HOST}
-ARG PORT=8000
+ARG PORT=8067
 ENV PORT=${PORT}
 EXPOSE ${PORT}
 

@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  gpt-researcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpt-researcher
+    ports:
+      - "8070:8000"
+    environment:
+      - OPENAI_API_KEY=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=llama3.1:8b
+    depends_on:
+      - ollama
+    networks:
+      - gpt-researcher-network
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - gpt-researcher-network
+
+  legal-enhancement:
+    build:
+      context: .
+      dockerfile: Dockerfile.legal-enhancement-minimal
+    ports:
+      - "8071:8001"
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - gpt-researcher-network
+
+  owui-bridge:
+    build:
+      context: .
+      dockerfile: Dockerfile.owui-bridge
+    ports:
+      - "8072:8002"
+    environment:
+      - GPT_RESEARCHER_URL=http://gpt-researcher:8000
+      - LEGAL_ENHANCEMENT_URL=http://legal-enhancement:8001
+    depends_on:
+      - gpt-researcher
+      - legal-enhancement
+    networks:
+      - gpt-researcher-network
+
+volumes:
+  ollama_data:
+
+networks:
+  gpt-researcher-network:
+    driver: bridge

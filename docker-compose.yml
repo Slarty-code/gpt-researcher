@@ -1,3 +1,4 @@
+# Force rebuild - langchain-ollama package needed
 services:
   rag-service:
     build: ./rag-service
@@ -12,6 +13,7 @@ services:
 
   gpt-researcher:
     pull_policy: build
+<<<<<<< HEAD
     image: gptresearcher/gpt-researcher
     build: ./
     environment: 
@@ -26,6 +28,43 @@ services:
       PRIVATE_MODE: ${PRIVATE_MODE:-false}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL}
+=======
+    build: 
+      context: ./
+      no_cache: true
+    environment:
+      # Ollama Configuration
+      OPENAI_API_KEY: "ollama"
+      OPENAI_BASE_URL: "http://host.docker.internal:11434/v1"
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      
+      # LLM Models (using your Ollama models)
+      FAST_LLM: "ollama:gpt-oss:20b"
+      SMART_LLM: "ollama:gpt-oss:20b"
+      STRATEGIC_LLM: "ollama:gpt-oss:20b"
+      
+      # Embedding Model
+      EMBEDDING: "ollama:snowflake-arctic-embed2"
+      OLLAMA_EMBEDDING_MODEL: "snowflake-arctic-embed2"
+      EMBEDDING_PROVIDER: "ollama"
+      
+      # Search Configuration
+      TAVILY_API_KEY: "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"
+      
+      # GPT Researcher Configuration
+      LOGGING_LEVEL: "INFO"
+      PORT: "8000"
+      
+      # Optional API keys
+      LANGCHAIN_API_KEY: ""
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      /bin/sh -c "
+      pip install langchain-ollama>=0.3.3 &&
+      python -m uvicorn main:app --host 0.0.0.0 --port 8000
+      "
+>>>>>>> 0ce370d6e1ea8375ae093d2020b08bac43f652f4
     volumes:
       - ${PWD}/my-docs:/usr/src/app/my-docs:rw
       - ${PWD}/outputs:/usr/src/app/outputs:rw
@@ -34,7 +73,7 @@ services:
     user: root
     restart: always
     ports:
-      - 8000:8000
+      - 8067:8000
       
   gptr-nextjs:
     pull_policy: build
@@ -44,18 +83,20 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       LOGGING_LEVEL: INFO
       NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID}
-      NEXT_PUBLIC_GPTR_API_URL: ${NEXT_PUBLIC_GPTR_API_URL}
+      NEXT_PUBLIC_GPTR_API_URL: "http://gpt-researcher:8000"
+      PORT: 3037 
     build:
       dockerfile: Dockerfile.dev
       context: frontend/nextjs
+      no_cache: true
     volumes:
       - /app/node_modules
-      - ./frontend/nextjs:/app
+      - ./frontend/nextjs:/app/src
       - ./frontend/nextjs/.next:/app/.next
       - ./outputs:/app/outputs
     restart: always
     ports:
-      - 3000:3000
+      - 3037:3037
 
   gpt-researcher-tests:
     image: gptresearcher/gpt-researcher-tests
@@ -86,6 +127,6 @@ services:
       - ./docs/discord-bot:/app
       - /app/node_modules
     ports:
-      - 3001:3000
+      - 3039:3000
     profiles: ["discord"]
     restart: always

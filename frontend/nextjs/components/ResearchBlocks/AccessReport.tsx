@@ -24,18 +24,14 @@ const AccessReport: React.FC<AccessReportProps> = ({ accessData, chatBoxSettings
       return '#';
     }
 
-    const path = accessData[dataType] as string;
-    
-    // Clean the path - remove leading/trailing slashes and handle outputs/ prefix
-    const cleanPath = path
-      .trim()
-      .replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes
-    
-    // Only prepend outputs/ if it's not already there
-    const finalPath = cleanPath.startsWith('outputs/') 
-      ? cleanPath 
-      : `outputs/${cleanPath}`;
-    
+    let path = (accessData[dataType] as string).trim();
+    try {
+      path = decodeURIComponent(path);
+    } catch {
+      // Leave path as-is if not encoded
+    }
+    const cleanPath = path.replace(/^\/+|\/+$/g, '');
+    const finalPath = cleanPath.startsWith('outputs/') ? cleanPath : `outputs/${cleanPath}`;
     return `${host}/${finalPath}`;
   };
 

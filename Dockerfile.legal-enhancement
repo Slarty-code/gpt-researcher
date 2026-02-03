@@ -1,0 +1,120 @@
+# Legal Document Enhancement Container
+# This runs alongside GPT Researcher without conflicts
+
+# Use Ubuntu base for better package management
+FROM ubuntu:22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies in stages to avoid conflicts
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common \
+    curl \
+    wget \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python 3.11
+RUN add-apt-repository ppa:deadsnakes/ppa && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python3.11 \
+    python3.11-dev \
+    python3.11-distutils \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install build tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
+    gcc \
+    g++ \
+    make \
+    cmake \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install basic OCR dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    poppler-utils \
+    libpoppler-cpp-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install OpenCV and graphics dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libopencv-dev \
+    python3-opencv \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgcc-s1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install additional dependencies for PaddleOCR
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgomp1 \
+    libgcc-s1 \
+    libgthread-2.0-0 \
+    libgtk-3-0 \
+    libavcodec58 \
+    libavformat58 \
+    libswscale5 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create symlink for python
+RUN ln -s /usr/bin/python3.11 /usr/bin/python
+
+# Upgrade pip
+RUN python -m pip install --upgrade pip
+
+# Copy GPT Researcher requirements first (for compatibility)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy and install legal enhancement requirements (full capabilities)
+COPY legal_document_enhancement/requirements.txt legal_requirements.txt
+RUN pip install --no-cache-dir -r legal_requirements.txt
+
+# Install PST file support (safe, no conflicts)
+RUN pip install --no-cache-dir libpff-python>=20231205
+
+# Install archive processing support
+RUN pip install --no-cache-dir rarfile>=4.0
+
+# Copy the legal enhancement module
+COPY legal_document_enhancement/ ./legal_document_enhancement/
+
+# Copy GPT Researcher code (for integration)
+COPY gpt_researcher/ ./gpt_researcher/
+COPY backend/ ./backend/
+
+# Create API server for legal enhancement
+COPY legal_api_server.py .
+
+# Create startup script
+COPY start_legal_enhancement.sh .
+RUN chmod +x start_legal_enhancement.sh
+
+# Expose port
+EXPOSE 8001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
+
+# Run the legal enhancement API server
+CMD ["./start_legal_enhancement.sh"]

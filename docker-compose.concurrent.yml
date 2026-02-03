@@ -1,0 +1,238 @@
+version: '3.8'
+
+services:
+  # Basic Stack (Ports 8000-8009)
+  gpt-researcher-basic:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpt-researcher
+    container_name: gpt-researcher-basic
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RESEARCH_TYPE=${RESEARCH_TYPE:-research_report}
+    networks:
+      - gpt-researcher-basic
+    restart: unless-stopped
+
+  # Enhanced Stack (Ports 8010-8019)
+  gpt-researcher-enhanced:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpt-researcher
+    container_name: gpt-researcher-enhanced
+    ports:
+      - "8010:8000"  # Different external port
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RESEARCH_TYPE=${RESEARCH_TYPE:-research_report}
+    networks:
+      - gpt-researcher-enhanced
+    restart: unless-stopped
+
+  legal-enhancement-enhanced:
+    build:
+      context: .
+      dockerfile: Dockerfile.legal-enhancement
+    container_name: legal-enhancement-enhanced
+    ports:
+      - "8011:8001"  # Different external port
+    volumes:
+      - ./legal_document_enhancement:/app/legal_document_enhancement
+      - ./gpt_researcher:/app/gpt_researcher
+      - ./backend:/app/backend
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - USE_ENHANCED_PROCESSING=true
+      - USE_SEMANTIC_CHUNKING=true
+    networks:
+      - gpt-researcher-enhanced
+    restart: unless-stopped
+
+  # OWUI Bridge Stack (Ports 8020-8029)
+  gpt-researcher-owui:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpt-researcher
+    container_name: gpt-researcher-owui
+    ports:
+      - "8020:8000"  # Different external port
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RESEARCH_TYPE=${RESEARCH_TYPE:-research_report}
+    networks:
+      - gpt-researcher-owui
+    restart: unless-stopped
+
+  legal-enhancement-owui:
+    build:
+      context: .
+      dockerfile: Dockerfile.legal-enhancement
+    container_name: legal-enhancement-owui
+    ports:
+      - "8021:8001"  # Different external port
+    volumes:
+      - ./legal_document_enhancement:/app/legal_document_enhancement
+      - ./gpt_researcher:/app/gpt_researcher
+      - ./backend:/app/backend
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - USE_ENHANCED_PROCESSING=true
+      - USE_SEMANTIC_CHUNKING=true
+    networks:
+      - gpt-researcher-owui
+    restart: unless-stopped
+
+  owui-bridge-owui:
+    build:
+      context: .
+      dockerfile: Dockerfile.owui-bridge
+    container_name: owui-bridge-owui
+    ports:
+      - "8022:8002"  # Different external port
+    volumes:
+      - ./owui_gpt_researcher_bridge.py:/app/owui_gpt_researcher_bridge.py
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - GPT_RESEARCHER_URL=http://gpt-researcher-owui:8000
+      - LEGAL_ENHANCEMENT_URL=http://legal-enhancement-owui:8001
+    depends_on:
+      - gpt-researcher-owui
+      - legal-enhancement-owui
+    networks:
+      - gpt-researcher-owui
+    restart: unless-stopped
+
+  # OWUI Complete Stack (Ports 8030-8039)
+  gpt-researcher-complete:
+    build:
+      context: .
+      dockerfile: Dockerfile.gpt-researcher
+    container_name: gpt-researcher-complete
+    ports:
+      - "8030:8000"  # Different external port
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - RESEARCH_TYPE=${RESEARCH_TYPE:-research_report}
+    networks:
+      - gpt-researcher-complete
+    restart: unless-stopped
+
+  legal-enhancement-complete:
+    build:
+      context: .
+      dockerfile: Dockerfile.legal-enhancement
+    container_name: legal-enhancement-complete
+    ports:
+      - "8031:8001"  # Different external port
+    volumes:
+      - ./legal_document_enhancement:/app/legal_document_enhancement
+      - ./gpt_researcher:/app/gpt_researcher
+      - ./backend:/app/backend
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - USE_ENHANCED_PROCESSING=true
+      - USE_SEMANTIC_CHUNKING=true
+    networks:
+      - gpt-researcher-complete
+    restart: unless-stopped
+
+  owui-bridge-complete:
+    build:
+      context: .
+      dockerfile: Dockerfile.owui-bridge
+    container_name: owui-bridge-complete
+    ports:
+      - "8032:8002"  # Different external port
+    volumes:
+      - ./owui_gpt_researcher_bridge.py:/app/owui_gpt_researcher_bridge.py
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - GPT_RESEARCHER_URL=http://gpt-researcher-complete:8000
+      - LEGAL_ENHANCEMENT_URL=http://legal-enhancement-complete:8001
+    depends_on:
+      - gpt-researcher-complete
+      - legal-enhancement-complete
+    networks:
+      - gpt-researcher-complete
+    restart: unless-stopped
+
+  owui-complete:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: owui-complete
+    ports:
+      - "8033:8080"  # Different external port
+    volumes:
+      - owui_data_complete:/app/backend/data
+    environment:
+      - OPENAI_API_BASE_URL=http://owui-bridge-complete:8002
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-your-secret-key-here}
+    depends_on:
+      - owui-bridge-complete
+    networks:
+      - gpt-researcher-complete
+    restart: unless-stopped
+
+  chromadb-complete:
+    image: chromadb/chroma:latest
+    container_name: chromadb-complete
+    ports:
+      - "8034:8000"  # Different external port
+    volumes:
+      - chroma_data_complete:/chroma/chroma
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+    networks:
+      - gpt-researcher-complete
+    restart: unless-stopped
+
+  redis-complete:
+    image: redis:7-alpine
+    container_name: redis-complete
+    ports:
+      - "8035:6379"  # Different external port
+    volumes:
+      - redis_data_complete:/data
+    networks:
+      - gpt-researcher-complete
+    restart: unless-stopped
+
+volumes:
+  owui_data_complete:
+    driver: local
+  chroma_data_complete:
+    driver: local
+  redis_data_complete:
+    driver: local
+
+networks:
+  gpt-researcher-basic:
+    driver: bridge
+  gpt-researcher-enhanced:
+    driver: bridge
+  gpt-researcher-owui:
+    driver: bridge
+  gpt-researcher-complete:
+    driver: bridge
