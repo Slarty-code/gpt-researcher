@@ -15,6 +15,25 @@ from ..utils.llm import create_chat_completion
 
 logger = logging.getLogger(__name__)
 
+# #region debug instrumentation
+def _debug_log(location, message, data, hypothesis_id=None):
+    try:
+        log_path = r"c:\dev\gpt-researcher\.cursor\debug.log"
+        log_entry = {
+            "sessionId": "debug-session",
+            "runId": "run1",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(__import__("time").time() * 1000)
+        }
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry) + "\n")
+    except Exception:
+        pass
+# #endregion
+
 async def choose_agent(
     query,
     cfg,
@@ -40,8 +59,14 @@ async def choose_agent(
     """
     query = f"{parent_query} - {query}" if parent_query else f"{query}"
     response = None  # Initialize response to ensure it's defined
+    # #region debug instrumentation
+    _debug_log("agent_creator.py:34", "choose_agent entry", {"query": query, "response_init": str(response)}, "A")
+    # #endregion
 
     try:
+        # #region debug instrumentation
+        _debug_log("agent_creator.py:37", "before create_chat_completion", {"response_before": str(response)}, "A")
+        # #endregion
         response = await create_chat_completion(
             model=cfg.smart_llm_model,
             messages=[
@@ -54,11 +79,17 @@ async def choose_agent(
             cost_callback=cost_callback,
             **kwargs
         )
+        # #region debug instrumentation
+        _debug_log("agent_creator.py:49", "after create_chat_completion", {"response_after": str(response), "response_type": type(response).__name__, "response_is_none": response is None}, "A")
+        # #endregion
 
         agent_dict = json.loads(response)
         return agent_dict["server"], agent_dict["agent_role_prompt"]
 
     except Exception as e:
+        # #region debug instrumentation
+        _debug_log("agent_creator.py:53", "exception caught in choose_agent", {"exception_type": type(e).__name__, "exception_msg": str(e), "response_in_except": str(response), "response_is_none": response is None}, "A")
+        # #endregion
         return await handle_json_error(response)
 
 
@@ -75,6 +106,9 @@ async def handle_json_error(response: str | None):
         A tuple of (agent_name, agent_role_prompt). Returns default agent
         if all parsing attempts fail.
     """
+    # #region debug instrumentation
+    _debug_log("agent_creator.py:57", "handle_json_error entry", {"response": str(response), "response_type": type(response).__name__, "response_is_none": response is None}, "C")
+    # #endregion
     try:
         agent_dict = json_repair.loads(response)
         if agent_dict.get("server") and agent_dict.get("agent_role_prompt"):
@@ -82,6 +116,9 @@ async def handle_json_error(response: str | None):
     except Exception as e:
         error_type = type(e).__name__
         error_msg = str(e)
+        # #region debug instrumentation
+        _debug_log("agent_creator.py:62", "json_repair exception", {"error_type": error_type, "error_msg": error_msg, "response": str(response), "response_is_none": response is None}, "C")
+        # #endregion
         logger.warning(
             f"Failed to parse agent JSON with json_repair: {error_type}: {error_msg}",
             exc_info=True
@@ -89,6 +126,9 @@ async def handle_json_error(response: str | None):
         if response:
             logger.debug(f"LLM response that failed to parse: {response[:500]}...")
 
+    # #region debug instrumentation
+    _debug_log("agent_creator.py:72", "before extract_json_with_regex", {"response": str(response), "response_type": type(response).__name__, "response_is_none": response is None}, "C")
+    # #endregion
     json_string = extract_json_with_regex(response)
     if json_string:
         try:
@@ -118,6 +158,9 @@ def extract_json_with_regex(response: str | None) -> str | None:
     Returns:
         The extracted JSON string if found, None otherwise.
     """
+    # #region debug instrumentation
+    _debug_log("agent_creator.py:90", "extract_json_with_regex entry", {"response": str(response), "response_type": type(response).__name__, "response_is_none": response is None}, "D")
+    # #endregion
     if not response:
         return None
     json_match = re.search(r"{.*?}", response, re.DOTALL)

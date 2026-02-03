@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import os
 from typing import Any
+import json
 
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import PromptTemplate
@@ -21,6 +22,24 @@ from gpt_researcher.llm_provider.generic.base import (
 from ..prompts import PromptFamily
 from .costs import estimate_llm_cost
 from .validators import Subtopics
+
+# #region debug instrumentation
+def _debug_log(location, message, data, hypothesis_id=None):
+    try:
+        log_path = r"c:\dev\gpt-researcher\.cursor\debug.log"
+        log_entry = {
+            "sessionId": "debug-session",
+            "runId": "run1",
+            "hypothesisId": hypothesis_id,
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": int(__import__("time").time() * 1000)
+        }
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry) + "\n")
+    except: pass
+# #endregion
 
 
 def get_llm(llm_provider: str, **kwargs):
@@ -96,16 +115,34 @@ async def create_chat_completion(
 
     provider = get_llm(llm_provider, **provider_kwargs)
     response = ""
+    # #region debug instrumentation
+    _debug_log("llm.py:81", "create_chat_completion before loop", {"response_init": response, "llm_provider": llm_provider}, "B")
+    # #endregion
     # create response
     for _ in range(10):  # maximum of 10 attempts
-        response = await provider.get_chat_response(
-            messages, stream, websocket, **kwargs
-        )
+        # #region debug instrumentation
+        _debug_log("llm.py:84", "before get_chat_response call", {"attempt": _}, "B")
+        # #endregion
+        try:
+            response = await provider.get_chat_response(
+                messages, stream, websocket, **kwargs
+            )
+            # #region debug instrumentation
+            _debug_log("llm.py:89", "after get_chat_response success", {"response": str(response), "response_type": type(response).__name__, "response_is_none": response is None}, "B")
+            # #endregion
+        except Exception as e:
+            # #region debug instrumentation
+            _debug_log("llm.py:92", "exception in get_chat_response", {"exception_type": type(e).__name__, "exception_msg": str(e), "response": str(response)}, "B")
+            # #endregion
+            raise
 
         if cost_callback:
             llm_costs = estimate_llm_cost(str(messages), response)
             cost_callback(llm_costs)
 
+        # #region debug instrumentation
+        _debug_log("llm.py:99", "create_chat_completion returning", {"response": str(response), "response_type": type(response).__name__}, "B")
+        # #endregion
         return response
 
     logging.error(f"Failed to get response from {llm_provider} API")
