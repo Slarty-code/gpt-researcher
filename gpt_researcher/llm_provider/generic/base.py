@@ -219,7 +219,8 @@ class GenericLLMProvider:
                 max_bucket_size=10,
             )
 
-            llm = ChatOpenAI(openai_api_base='https://openrouter.ai/api/v1',
+            base_url = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+            llm = ChatOpenAI(openai_api_base=base_url,
                      request_timeout=180,
                      openai_api_key=os.environ["OPENROUTER_API_KEY"],
                      rate_limiter=rate_limiter,

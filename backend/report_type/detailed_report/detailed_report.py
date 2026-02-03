@@ -22,6 +22,7 @@ class DetailedReport:
         complement_source_urls: bool = False,
         mcp_configs=None,
         mcp_strategy=None,
+        doc_path_override=None,
     ):
         self.query = query
         self.report_type = report_type
@@ -58,6 +59,8 @@ class DetailedReport:
             gpt_researcher_params["mcp_strategy"] = mcp_strategy
 
         self.gpt_researcher = GPTResearcher(**gpt_researcher_params)
+        if doc_path_override is not None:
+            self.gpt_researcher.cfg.set_doc_path(doc_path_override)
         self.existing_headers: List[Dict] = []
         self.global_context: List[str] = []
         self.global_written_sections: List[str] = []

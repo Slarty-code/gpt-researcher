@@ -190,6 +190,19 @@ class ResearchConductor:
         elif self.researcher.report_source == ReportSource.LangChainVectorStore.value:
             research_data = await self._get_context_by_vectorstore(self.researcher.query, self.researcher.vector_store_filter)
 
+        # Dex-researcher: in private mode, if no RAG results, set placeholder so report states insufficient sources
+        private_mode = getattr(self.researcher.cfg, "private_mode", False)
+        if private_mode and (not research_data or len(research_data) == 0):
+            research_data = [{
+                "href": "",
+                "body": "No external sources were used. No relevant corpus results were found for this query. The report must state clearly: 'No external sources; insufficient corpus results for this query.'",
+                "source_type": "rag",
+                "doc_id": "",
+                "doc_title": "System",
+                "location": "n/a",
+                "chunk_id": "",
+            }]
+
         # Rank and curate the sources
         self.researcher.context = research_data
         if self.researcher.cfg.curate_sources:

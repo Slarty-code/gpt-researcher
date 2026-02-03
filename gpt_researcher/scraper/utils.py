@@ -56,13 +56,40 @@ def get_relevant_images(soup: BeautifulSoup, url: str) -> list:
         return []
 
 def parse_dimension(value: str) -> int:
-    """Parse dimension value, handling px units"""
+    """Parse dimension value, handling px units, percentages, and other formats"""
+    if not value or not isinstance(value, str):
+        return None
+    
+    # Handle percentage values - skip them as they're relative
+    if value.strip().endswith('%'):
+        return None
+    
+    # Handle non-numeric values like 'auto', 'none', 'false', etc.
+    value_lower = value.lower().strip()
+    if value_lower in ['auto', 'none', 'false', 'true', 'inherit', 'initial', 'unset']:
+        return None
+    
+    # Handle CSS expressions or complex values
+    if any(char in value for char in ['/', ':', 'calc', 'var', '<', '>', 'span']):
+        return None
+    
+    # Remove common unit suffixes (px, em, rem, pt, etc.)
     if value.lower().endswith('px'):
-        value = value[:-2]  # Remove 'px' suffix
+        value = value[:-2]
+    elif value.lower().endswith('em'):
+        value = value[:-2]
+    elif value.lower().endswith('rem'):
+        value = value[:-3]
+    elif value.lower().endswith('pt'):
+        value = value[:-2]
+    
     try:
-        return int(value)  # Convert to float first to handle decimal values
-    except ValueError as e:
-        print(f"Error parsing dimension value {value}: {e}")
+        # Try to parse as float first to handle decimal values, then convert to int
+        float_value = float(value.strip())
+        return int(float_value)
+    except (ValueError, AttributeError) as e:
+        # Use logging instead of print for better error handling
+        logging.debug(f"Could not parse dimension value '{value}': {e}")
         return None
 
 def extract_title(soup: BeautifulSoup) -> str:

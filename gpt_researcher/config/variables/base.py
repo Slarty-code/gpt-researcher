@@ -42,3 +42,7 @@ class BaseConfig(TypedDict):
     MCP_ALLOWED_ROOT_PATHS: List[str]
     MCP_STRATEGY: str
     REASONING_EFFORT: str
+    # Dex-researcher: private mode and on-prem RAG
+    PRIVATE_MODE: bool
+    RAG_API_URL: Union[str, None]
+    RAG_API_KEY: Union[str, None]

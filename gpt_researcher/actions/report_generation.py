@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from ..config.config import Config
 from ..utils.llm import create_chat_completion
 from ..utils.logger import get_formatted_logger
@@ -7,6 +7,33 @@ from ..prompts import PromptFamily, get_prompt_by_report_type
 from ..utils.enum import Tone
 
 logger = get_formatted_logger()
+
+
+def format_context_for_report(context: Union[str, List[Dict[str, Any]]]) -> str:
+    """
+    Format context for the report prompt. If context is a list of source dicts,
+    produce a string with clear source labels and citation hints for RAG (corpus) sources.
+    """
+    if isinstance(context, str):
+        return context
+    if not isinstance(context, list):
+        return str(context)
+    parts = []
+    for i, item in enumerate(context):
+        if not isinstance(item, dict):
+            parts.append(str(item))
+            continue
+        body = item.get("body", item.get("raw_content", ""))
+        href = item.get("href", "")
+        source_type = item.get("source_type", "web")
+        if source_type == "rag":
+            doc_title = item.get("doc_title", "Corpus")
+            location = item.get("location", "")
+            cite_hint = f" [Cite as: [Source: {doc_title}, {location}]]"
+            parts.append(f"--- Corpus source{cite_hint} ---\n{body}")
+        else:
+            parts.append(f"--- Web source: {href} ---\n{body}")
+    return "\n\n".join(parts)
 
 
 async def write_report_introduction(
@@ -246,13 +273,14 @@ async def generate_report(
     """
     generate_prompt = get_prompt_by_report_type(report_type, prompt_family)
     report = ""
+    context_str = format_context_for_report(context)
 
     if report_type == "subtopic_report":
-        content = f"{generate_prompt(query, existing_headers, relevant_written_contents, main_topic, context, report_format=cfg.report_format, tone=tone, total_words=cfg.total_words, language=cfg.language)}"
+        content = f"{generate_prompt(query, existing_headers, relevant_written_contents, main_topic, context_str, report_format=cfg.report_format, tone=tone, total_words=cfg.total_words, language=cfg.language)}"
     elif custom_prompt:
-        content = f"{custom_prompt}\n\nContext: {context}"
+        content = f"{custom_prompt}\n\nContext: {context_str}"
     else:
-        content = f"{generate_prompt(query, context, report_source, report_format=cfg.report_format, tone=tone, total_words=cfg.total_words, language=cfg.language)}"
+        content = f"{generate_prompt(query, context_str, report_source, report_format=cfg.report_format, tone=tone, total_words=cfg.total_words, language=cfg.language)}"
     try:
         report = await create_chat_completion(
             model=cfg.smart_llm_model,

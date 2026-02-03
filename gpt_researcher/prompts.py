@@ -211,6 +211,7 @@ Please follow all of the following guidelines in your report:
 - You must also prioritize new articles over older articles if the source can be trusted.
 - You MUST NOT include a table of contents, but DO include proper markdown headers (# ## ###) to structure your report clearly.
 - Use in-text citation references in {report_format} format and make it with markdown hyperlink placed at the end of the sentence or paragraph that references them like this: ([in-text citation](url)).
+- For any claim or quote that comes from a "Corpus source" (on-prem document), you MUST cite it inline exactly as: [Source: doc_title, location] using the doc_title and location given for that source in the context.
 - Don't forget to add a reference list at the end of the report in {report_format} format and full url links without hyperlinks.
 - {reference_prompt}
 - {tone_prompt}

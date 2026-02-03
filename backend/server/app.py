@@ -401,7 +401,14 @@ async def chat(chat_request: ChatRequest):
         return {"response": response_message}
     except Exception as e:
         logger.error(f"Error processing chat request: {str(e)}", exc_info=True)
-        return {"error": str(e)}
+        # Return error in a format that matches the expected response structure
+        error_message = {
+            "role": "assistant",
+            "content": f"Sorry, there was an error processing your request: {str(e)}. Please try again.",
+            "timestamp": int(time.time() * 1000),
+            "metadata": None
+        }
+        return {"response": error_message}
 
 @app.post("/api/reports/{research_id}/chat")
 async def research_report_chat(research_id: str, request: Request):
@@ -438,7 +445,14 @@ async def research_report_chat(research_id: str, request: Request):
         return {"response": response_message}
     except Exception as e:
         logger.error(f"Error in research report chat: {str(e)}", exc_info=True)
-        return {"error": str(e)}
+        # Return error in a format that matches the expected response structure
+        error_message = {
+            "role": "assistant",
+            "content": f"Sorry, there was an error processing your request: {str(e)}. Please try again.",
+            "timestamp": int(time.time() * 1000),
+            "metadata": None
+        }
+        return {"response": error_message}
 
 @app.put("/api/reports/{research_id}")
 async def update_report(research_id: str, request: Request):

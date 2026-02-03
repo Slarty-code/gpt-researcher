@@ -82,6 +82,11 @@ class Config:
             print(f"Warning: {str(e)}. Defaulting to 'tavily' retriever.")
             self.retrievers = ["tavily"]
 
+        # Dex-researcher: PRIVATE_MODE and RAG env (may not be in config file)
+        self.private_mode = self.convert_env_value("PRIVATE_MODE", os.environ.get("PRIVATE_MODE", "false"), bool) if "PRIVATE_MODE" in config else (os.environ.get("PRIVATE_MODE", "").lower() in ("true", "1", "yes"))
+        self.rag_api_url = os.environ.get("RAG_API_URL") or config.get("RAG_API_URL")
+        self.rag_api_key = os.environ.get("RAG_API_KEY") or config.get("RAG_API_KEY")
+
     def _set_embedding_attributes(self) -> None:
         """Parse and set embedding provider and model attributes."""
         self.embedding_provider, self.embedding_model = self.parse_embedding(
@@ -145,13 +150,35 @@ class Config:
             self.smart_llm_model = os.environ["SMART_LLM_MODEL"] or self.smart_llm_model
 
     def _set_doc_path(self, config: Dict[str, Any]) -> None:
-        self.doc_path = config['DOC_PATH']
+        raw = os.environ.get("DOC_PATH") or config.get("DOC_PATH") or ""
+        if "," in str(raw).strip():
+            self.doc_path = [p.strip() for p in str(raw).split(",") if p.strip()]
+        else:
+            self.doc_path = raw if raw else DEFAULT_CONFIG["DOC_PATH"]
         if self.doc_path:
             try:
                 self.validate_doc_path()
             except Exception as e:
                 print(f"Warning: Error validating doc_path: {str(e)}. Using default doc_path.")
-                self.doc_path = DEFAULT_CONFIG['DOC_PATH']
+                self.doc_path = DEFAULT_CONFIG["DOC_PATH"]
+
+    def set_doc_path(self, path_or_paths) -> None:
+        """
+        Update doc path at runtime (e.g. from UI or API). Accepts a single path string
+        or comma-separated string or list of paths. Call this before a research run
+        to use different folder(s) for that run.
+        """
+        if isinstance(path_or_paths, list):
+            self.doc_path = [str(p).strip() for p in path_or_paths if str(p).strip()]
+        elif isinstance(path_or_paths, str) and "," in path_or_paths.strip():
+            self.doc_path = [p.strip() for p in path_or_paths.split(",") if p.strip()]
+        else:
+            self.doc_path = str(path_or_paths).strip() if path_or_paths else DEFAULT_CONFIG["DOC_PATH"]
+        if self.doc_path:
+            try:
+                self.validate_doc_path()
+            except Exception as e:
+                print(f"Warning: Error validating doc_path: {str(e)}.")
 
     @classmethod
     def load_config(cls, config_path: str | None) -> Dict[str, Any]:
@@ -249,8 +276,12 @@ class Config:
             )
 
     def validate_doc_path(self):
-        """Ensure that the folder exists at the doc path"""
-        os.makedirs(self.doc_path, exist_ok=True)
+        """Ensure that the folder(s) exist at the doc path (single path or list)."""
+        if isinstance(self.doc_path, list):
+            for p in self.doc_path:
+                os.makedirs(p, exist_ok=True)
+        else:
+            os.makedirs(self.doc_path, exist_ok=True)
 
     @staticmethod
     def convert_env_value(key: str, env_value: str, type_hint: Type) -> Any:

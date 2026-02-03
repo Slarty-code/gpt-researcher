@@ -4,6 +4,8 @@ This module provides functions to instantiate and manage various
 search retriever implementations.
 """
 
+import os
+
 
 def get_retriever(retriever: str):
     """Get a retriever class by name.
@@ -87,6 +89,10 @@ def get_retriever(retriever: str):
             from gpt_researcher.retrievers import MCPRetriever
 
             return MCPRetriever
+        case "rag":
+            from gpt_researcher.retrievers import RAGSearch
+
+            return RAGSearch
 
         case _:
             return None
@@ -103,6 +109,19 @@ def get_retrievers(headers: dict[str, str], cfg):
     Returns:
         list: A list of retriever classes to be used for searching.
     """
+    # Dex-researcher: private mode = only on-prem RAG, no web search
+    private_mode = getattr(cfg, "private_mode", False)
+    if private_mode:
+        rag_url = getattr(cfg, "rag_api_url", None) or os.environ.get("RAG_API_URL")
+        if rag_url:
+            retriever_classes = [get_retriever("rag")]
+            if retriever_classes[0] is None:
+                retriever_classes = [get_default_retriever()]
+            return retriever_classes
+        # No RAG configured in private mode: return no-op or empty would break flow; use RAG retriever anyway (it will return [])
+        retriever_classes = [get_retriever("rag") or get_default_retriever()]
+        return retriever_classes
+
     # Check headers first for multiple retrievers
     if headers.get("retrievers"):
         retrievers = headers.get("retrievers").split(",")
@@ -128,7 +147,7 @@ def get_retrievers(headers: dict[str, str], cfg):
     # Convert retriever names to actual retriever classes
     # Use get_default_retriever() as a fallback for any invalid retriever names
     retriever_classes = [get_retriever(r) or get_default_retriever() for r in retrievers]
-    
+
     return retriever_classes
 
 

@@ -19,6 +19,7 @@ class BasicReport:
         headers=None,
         mcp_configs=None,
         mcp_strategy=None,
+        doc_path_override=None,
     ):
         self.query = query
         self.query_domains = query_domains
@@ -52,6 +53,8 @@ class BasicReport:
             gpt_researcher_params["mcp_strategy"] = mcp_strategy
 
         self.gpt_researcher = GPTResearcher(**gpt_researcher_params)
+        if doc_path_override is not None:
+            self.gpt_researcher.cfg.set_doc_path(doc_path_override)
 
     async def run(self):
         await self.gpt_researcher.conduct_research()

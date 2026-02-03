@@ -21,13 +21,19 @@ class DocumentLoader:
     async def load(self) -> list:
         tasks = []
         if isinstance(self.path, list):
-            for file_path in self.path:
-                if os.path.isfile(file_path):  # Ensure it's a valid file
-                    filename = os.path.basename(file_path)
-                    file_name, file_extension_with_dot = os.path.splitext(filename)
+            for path_item in self.path:
+                if os.path.isfile(path_item):
+                    filename = os.path.basename(path_item)
+                    _, file_extension_with_dot = os.path.splitext(filename)
                     file_extension = file_extension_with_dot.strip(".").lower()
-                    tasks.append(self._load_document(file_path, file_extension))
-                    
+                    tasks.append(self._load_document(path_item, file_extension))
+                elif os.path.isdir(path_item):
+                    for root, _dirs, files in os.walk(path_item):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            _, file_extension_with_dot = os.path.splitext(file)
+                            file_extension = file_extension_with_dot.strip(".").lower()
+                            tasks.append(self._load_document(file_path, file_extension))
         elif isinstance(self.path, (str, bytes, os.PathLike)):
             for root, dirs, files in os.walk(self.path):
                 for file in files:

@@ -1,0 +1,1 @@
+{"run_id": "a7b22cf5-9ef2-4b96-a17a-ff925d0f8053", "session_id": "", "timestamp": "2026-02-03T02:18:57Z", "query": "whats on in geelong?", "mode": "normal", "sources_used": [], "models": {}, "report_id": "a7b22cf5-9ef2-4b96-a17a-ff925d0f8053", "steps": ["plan", "research", "write"], "error": "No module named 'langchain_huggingface'"}

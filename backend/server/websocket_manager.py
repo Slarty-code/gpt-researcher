@@ -1,8 +1,10 @@
 import asyncio
-import datetime
 import json
 import logging
+import os
 import traceback
+import uuid
+from datetime import datetime, timezone
 from typing import Dict, List
 
 from fastapi import WebSocket
@@ -12,6 +14,7 @@ from report_type import BasicReport, DetailedReport
 from gpt_researcher.utils.enum import ReportType, Tone
 from gpt_researcher.actions import stream_output  # Import stream_output
 from .server_utils import CustomLogsHandler
+from .audit import build_audit_record, write_audit_record
 
 logger = logging.getLogger(__name__)
 
@@ -95,36 +98,43 @@ class WebSocketManager:
             except:
                 pass  # If this fails too, there's nothing more we can do
 
-    async def start_streaming(self, task, report_type, report_source, source_urls, document_urls, tone, websocket, headers=None, query_domains=[], mcp_enabled=False, mcp_strategy="fast", mcp_configs=[]):
+    async def start_streaming(self, task, report_type, report_source, source_urls, document_urls, tone, websocket, headers=None, query_domains=[], mcp_enabled=False, mcp_strategy="fast", mcp_configs=[], doc_path_override=None):
         """Start streaming the output."""
         tone = Tone[tone]
-        # add customized JSON config file path here
         config_path = "default"
 
-        # Pass MCP parameters to run_agent
         report = await run_agent(
-            task, report_type, report_source, source_urls, document_urls, tone, websocket, 
+            task, report_type, report_source, source_urls, document_urls, tone, websocket,
             headers=headers, query_domains=query_domains, config_path=config_path,
-            mcp_enabled=mcp_enabled, mcp_strategy=mcp_strategy, mcp_configs=mcp_configs
+            mcp_enabled=mcp_enabled, mcp_strategy=mcp_strategy, mcp_configs=mcp_configs,
+            doc_path_override=doc_path_override,
         )
         return report
 
-async def run_agent(task, report_type, report_source, source_urls, document_urls, tone: Tone, websocket, stream_output=stream_output, headers=None, query_domains=[], config_path="", return_researcher=False, mcp_enabled=False, mcp_strategy="fast", mcp_configs=[]):
-    """Run the agent."""    
+async def run_agent(task, report_type, report_source, source_urls, document_urls, tone: Tone, websocket, stream_output=stream_output, headers=None, query_domains=[], config_path="", return_researcher=False, mcp_enabled=False, mcp_strategy="fast", mcp_configs=[], doc_path_override=None):
+    """Run the agent."""
+    run_id = str(uuid.uuid4())
+    start_ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    mode = "private" if os.environ.get("PRIVATE_MODE", "").lower() in ("true", "1", "yes") else "normal"
+    report = ""
+    researcher = None
+    err_msg = None
+
+    logger.info(
+        "research_run_start run_id=%s query=%s mode=%s timestamp=%s",
+        run_id, task[:80] if task else "", mode, start_ts,
+        extra={"run_id": run_id, "query": task, "mode": mode, "timestamp": start_ts, "steps": ["plan", "research", "write"]},
+    )
+
     # Create logs handler for this research task
     logs_handler = CustomLogsHandler(websocket, task)
 
     # Set up MCP configuration if enabled
     if mcp_enabled and mcp_configs:
-        import os
         current_retriever = os.getenv("RETRIEVER", "tavily")
         if "mcp" not in current_retriever:
-            # Add MCP to existing retrievers
             os.environ["RETRIEVER"] = f"{current_retriever},mcp"
-
-        # Set MCP strategy
         os.environ["MCP_STRATEGY"] = mcp_strategy
-
         print(f"🔧 MCP enabled with strategy '{mcp_strategy}' and {len(mcp_configs)} server(s)")
         await logs_handler.send_json({
             "type": "logs",
@@ -132,52 +142,87 @@ async def run_agent(task, report_type, report_source, source_urls, document_urls
             "output": f"🔧 MCP enabled with strategy '{mcp_strategy}' and {len(mcp_configs)} server(s)"
         })
 
-    # Initialize researcher based on report type
-    if report_type == "multi_agents":
-        report = await run_research_task(
-            query=task, 
-            websocket=logs_handler,  # Use logs_handler instead of raw websocket
-            stream_output=stream_output, 
-            tone=tone, 
-            headers=headers
-        )
-        report = report.get("report", "")
+    try:
+        if report_type == "multi_agents":
+            report = await run_research_task(
+                query=task,
+                websocket=logs_handler,
+                stream_output=stream_output,
+                tone=tone,
+                headers=headers
+            )
+            report = report.get("report", "")
 
-    elif report_type == ReportType.DetailedReport.value:
-        researcher = DetailedReport(
-            query=task,
-            query_domains=query_domains,
-            report_type=report_type,
-            report_source=report_source,
-            source_urls=source_urls,
-            document_urls=document_urls,
-            tone=tone,
-            config_path=config_path,
-            websocket=logs_handler,  # Use logs_handler instead of raw websocket
-            headers=headers,
-            mcp_configs=mcp_configs if mcp_enabled else None,
-            mcp_strategy=mcp_strategy if mcp_enabled else None,
-        )
-        report = await researcher.run()
-        
-    else:
-        researcher = BasicReport(
-            query=task,
-            query_domains=query_domains,
-            report_type=report_type,
-            report_source=report_source,
-            source_urls=source_urls,
-            document_urls=document_urls,
-            tone=tone,
-            config_path=config_path,
-            websocket=logs_handler,  # Use logs_handler instead of raw websocket
-            headers=headers,
-            mcp_configs=mcp_configs if mcp_enabled else None,
-            mcp_strategy=mcp_strategy if mcp_enabled else None,
-        )
-        report = await researcher.run()
+        elif report_type == ReportType.DetailedReport.value:
+            researcher = DetailedReport(
+                query=task,
+                query_domains=query_domains,
+                report_type=report_type,
+                report_source=report_source,
+                source_urls=source_urls,
+                document_urls=document_urls,
+                tone=tone,
+                config_path=config_path,
+                websocket=logs_handler,
+                headers=headers,
+                mcp_configs=mcp_configs if mcp_enabled else None,
+                mcp_strategy=mcp_strategy if mcp_enabled else None,
+                doc_path_override=doc_path_override,
+            )
+            report = await researcher.run()
 
-    if report_type != "multi_agents" and return_researcher:
+        else:
+            researcher = BasicReport(
+                query=task,
+                query_domains=query_domains,
+                report_type=report_type,
+                report_source=report_source,
+                source_urls=source_urls,
+                document_urls=document_urls,
+                tone=tone,
+                config_path=config_path,
+                websocket=logs_handler,
+                headers=headers,
+                mcp_configs=mcp_configs if mcp_enabled else None,
+                mcp_strategy=mcp_strategy if mcp_enabled else None,
+                doc_path_override=doc_path_override,
+            )
+            report = await researcher.run()
+
+    except Exception as e:
+        err_msg = str(e)
+        logger.exception("run_agent failed: %s", e)
+        raise
+    finally:
+        # Audit: build and write record (for non-multi_agents we have researcher with context)
+        try:
+            context = []
+            models = {}
+            if researcher is not None and hasattr(researcher, "gpt_researcher"):
+                gtr = researcher.gpt_researcher
+                context = getattr(gtr, "context", []) or []
+                cfg = getattr(gtr, "cfg", None)
+                if cfg:
+                    models = {
+                        "chat": getattr(cfg, "smart_llm_model", "") or "",
+                        "embedding": getattr(cfg, "embedding_model", "") or "",
+                    }
+            record = build_audit_record(
+                run_id=run_id,
+                query=task,
+                mode=mode,
+                timestamp=start_ts,
+                context=context,
+                models=models,
+                report_id=run_id,
+                steps=["plan", "research", "write"],
+                error=err_msg,
+                session_id="",
+            )
+            write_audit_record(record)
+        except Exception as audit_err:
+            logger.warning("Audit write failed: %s", audit_err)
+
+    if report_type != "multi_agents" and return_researcher and researcher is not None:
         return report, researcher.gpt_researcher
-    else:
-        return report
+    return report

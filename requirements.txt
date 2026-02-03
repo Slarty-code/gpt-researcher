@@ -37,6 +37,8 @@ lxml>=4.9.2
 # Vector Store & Embeddings
 tiktoken>=0.7.0
 numpy>=2.0.0,<2.3.0
+langchain-huggingface>=0.0.3
+sentence-transformers>=2.2.0
 
 # Utilities
 aiofiles>=23.2.1
