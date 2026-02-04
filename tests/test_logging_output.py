@@ -9,7 +9,7 @@ from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class TestWebSocket(WebSocket):
+class MockWebSocket(WebSocket):
     def __init__(self):
         self.events = []
         self.scope = {}
@@ -26,13 +26,17 @@ class TestWebSocket(WebSocket):
         self.events.append(event)
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    not __import__("os").environ.get("OPENAI_API_KEY"),
+    reason="OPENAI_API_KEY not set; test requires LLM/embedding API",
+)
 async def test_log_output_file():
     """Test to verify logs are properly written to output file"""
     from gpt_researcher.agent import GPTResearcher
     from backend.server.server_utils import CustomLogsHandler
     
     # 1. Setup like the main app
-    websocket = TestWebSocket()
+    websocket = MockWebSocket()
     await websocket.accept()
     
     # 2. Initialize researcher like main app

@@ -25,6 +25,7 @@ Prerequisites:
 import asyncio
 import os
 import logging
+import pytest
 from typing import Dict, List, Any
 
 # Configure logging
@@ -90,6 +91,11 @@ def setup_environment():
     print("✅ All required environment variables are set")
     return True
 
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    not os.environ.get("OPENAI_API_KEY") or not os.environ.get("TAVILY_API_KEY"),
+    reason="OPENAI_API_KEY and TAVILY_API_KEY required for MCP web search test",
+)
 async def test_web_search_mcp():
     """Test MCP integration with web search (Tavily) for news and general topics."""
     print("\n🌐 Testing Web Search MCP Integration")
@@ -152,6 +158,11 @@ async def test_web_search_mcp():
         logger.exception("Web search MCP test error:")
         return False
 
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    not os.environ.get("OPENAI_API_KEY") or not os.environ.get("GITHUB_PERSONAL_ACCESS_TOKEN"),
+    reason="OPENAI_API_KEY and GITHUB_PERSONAL_ACCESS_TOKEN required for MCP GitHub test",
+)
 async def test_github_mcp():
     """Test MCP integration with GitHub for code-related queries."""
     print("\n🐙 Testing GitHub MCP Integration")

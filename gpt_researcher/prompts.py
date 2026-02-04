@@ -171,16 +171,28 @@ The response should contain ONLY the list.
         total_words=1000,
         tone=None,
         language="english",
+        allowed_urls=None,
     ):
         """Generates the report prompt for the given question and research summary.
         Args: question (str): The question to generate the report prompt for
                 research_summary (str): The research summary to generate the report prompt for
+                allowed_urls: Optional list of URLs that may be used for citations (web only).
         Returns: str: The report prompt for the given question and research summary
         """
+        allowed_urls = allowed_urls or []
 
         reference_prompt = ""
         if report_source == ReportSource.Web.value:
-            reference_prompt = f"""
+            if allowed_urls:
+                url_list = "\n".join(f"- {u}" for u in allowed_urls[:100])
+                reference_prompt = f"""
+The ONLY URLs you may use for in-text citations and references are the following. Use them exactly; do not invent or alter URLs:
+{url_list}
+
+Do NOT add a reference list at the end; it will be added automatically. Use in-text citation references in {report_format} format with markdown hyperlinks like this: ([in-text citation](url)) where url is one of the URLs listed above.
+"""
+            else:
+                reference_prompt = f"""
 You MUST write all used source urls at the end of the report as references, and make sure to not add duplicated sources, but only one reference for each.
 Every url should be hyperlinked: [url website](url)
 Additionally, you MUST include hyperlinks to the relevant URLs wherever they are referenced in the report:
@@ -328,7 +340,8 @@ The response MUST not contain any markdown format or additional text (like ```js
         report_format="apa",
         tone=None,
         total_words=2000,
-        language: str = "english"
+        language: str = "english",
+        allowed_urls=None,
     ):
         """Generates the deep research report prompt, specialized for handling hierarchical research results.
         Args:
@@ -339,12 +352,24 @@ The response MUST not contain any markdown format or additional text (like ```js
             tone: The tone to use in writing
             total_words (int): Minimum word count
             language (str): Output language
+            allowed_urls: Optional list of URLs that may be used for citations (web only).
         Returns:
             str: The deep research report prompt
         """
+        allowed_urls = allowed_urls or []
+
         reference_prompt = ""
         if report_source == ReportSource.Web.value:
-            reference_prompt = f"""
+            if allowed_urls:
+                url_list = "\n".join(f"- {u}" for u in allowed_urls[:100])
+                reference_prompt = f"""
+The ONLY URLs you may use for in-text citations and references are the following. Use them exactly; do not invent or alter URLs:
+{url_list}
+
+Do NOT add a reference list at the end; it will be added automatically. Use in-text citation references in {report_format} format with markdown hyperlinks like this: ([in-text citation](url)) where url is one of the URLs listed above.
+"""
+            else:
+                reference_prompt = f"""
 You MUST write all used source urls at the end of the report as references, and make sure to not add duplicated sources, but only one reference for each.
 Every url should be hyperlinked: [url website](url)
 Additionally, you MUST include hyperlinks to the relevant URLs wherever they are referenced in the report:

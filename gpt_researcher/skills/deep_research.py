@@ -3,6 +3,7 @@ import asyncio
 import logging
 import time
 from datetime import datetime, timedelta
+from urllib.parse import urlparse, urlunparse
 
 from gpt_researcher.llm_provider.generic.base import ReasoningEfforts
 from ..utils.llm import create_chat_completion
@@ -33,6 +34,58 @@ def trim_context_to_word_limit(context_list: List[str], max_words: int = MAX_CON
             break
 
     return trimmed_context
+
+
+def _normalize_url_for_match(url: str) -> str:
+    """Normalize URL for comparison: no fragment, trailing slash stripped, lowercased scheme/netloc."""
+    try:
+        parsed = urlparse(url.strip())
+        path = parsed.path.rstrip("/") or "/"
+        normalized = urlunparse((
+            parsed.scheme.lower() if parsed.scheme else "",
+            parsed.netloc.lower() if parsed.netloc else "",
+            path,
+            parsed.params,
+            parsed.query,
+            "",  # no fragment
+        ))
+        return normalized
+    except Exception:
+        return url.strip()
+
+
+def _sanitize_citations(citations: Dict[str, str], allowed_urls: Set[str]) -> Dict[str, str]:
+    """Keep only citations whose URL is in allowed_urls; match by exact or normalized URL; drop the rest."""
+    if not allowed_urls:
+        return {}
+    allowed_set = set(allowed_urls)
+    allowed_by_normalized = {_normalize_url_for_match(u): u for u in allowed_set}
+    sanitized = {}
+    for learning, url in citations.items():
+        if not url or not url.strip():
+            continue
+        u = url.strip()
+        if u in allowed_set:
+            sanitized[learning] = u
+            continue
+        norm = _normalize_url_for_match(u)
+        if norm in allowed_by_normalized:
+            sanitized[learning] = allowed_by_normalized[norm]
+            continue
+        parsed = urlparse(u)
+        for allowed in allowed_set:
+            if _normalize_url_for_match(allowed) == norm:
+                sanitized[learning] = allowed
+                break
+            try:
+                p_allowed = urlparse(allowed)
+                if parsed.netloc.lower() == p_allowed.netloc.lower() and parsed.path.rstrip("/") == p_allowed.path.rstrip("/"):
+                    sanitized[learning] = allowed
+                    break
+            except Exception:
+                pass
+    return sanitized
+
 
 class ResearchProgress:
     def __init__(self, total_depth: int, total_breadth: int):
@@ -260,6 +313,12 @@ Format each question on a new line starting with 'Question: '"""}
                     results = await self.process_research_results(
                         query=serp_query['query'],
                         context=context
+                    )
+
+                    # Restrict citations to actually-visited URLs to avoid 404s/hallucinations
+                    results['citations'] = _sanitize_citations(
+                        results['citations'],
+                        visited if isinstance(visited, set) else set(visited),
                     )
 
                     # Update progress

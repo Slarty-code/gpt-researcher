@@ -126,6 +126,67 @@ def sanitize_filename(filename: str) -> str:
     return re.sub(r"[^\w\s-]", "", sanitized).strip()
 
 
+# Windows reserved names (no extension or with extension)
+_RESERVED_NAMES = frozenset(
+    name.upper() for name in (
+        "CON", "PRN", "AUX", "NUL",
+        "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+    )
+)
+
+
+def secure_filename(filename: str) -> str:
+    """Return a safe filename: no path components, no control chars, no reserved names."""
+    if not filename or not filename.strip():
+        raise ValueError("empty or invalid filename")
+    name = filename.strip()
+    # Strip leading dots and spaces first; then treat all-dots as empty
+    name = name.lstrip(". ")
+    if not name:
+        raise ValueError("empty or invalid filename")
+    # Path traversal: only literal ".." as path segment (../ or ..\ or leading ..), not "...."
+    if re.search(r"(^|[/\\])\.\.([/\\]|$)", name):
+        raise ValueError("path traversal not allowed")
+    if "\\" in name or "/" in name:
+        name = re.sub(r"[/\\]+", "", name)
+    name = name.strip().lstrip(". ")
+    if not name:
+        raise ValueError("empty or invalid filename")
+    # Remove null and control characters
+    name = "".join(c for c in name if c != "\x00" and (ord(c) >= 32 or c in " \t"))
+    name = name.lstrip(". ")
+    if not name:
+        raise ValueError("empty or invalid filename")
+    if len(name) > 255:
+        raise ValueError("filename too long")
+    # Windows drive letter (e.g. C: or D:)
+    if len(name) >= 2 and name[1] == ":" and name[0].isalpha():
+        name = name[2:].lstrip(". ")
+    if not name:
+        raise ValueError("empty or invalid filename")
+    # Windows reserved names
+    base, _, ext = name.partition(".")
+    if base.upper() in _RESERVED_NAMES or (not ext and name.upper() in _RESERVED_NAMES):
+        raise ValueError("reserved name not allowed")
+    return name
+
+
+def validate_file_path(file_path: str, base_dir: str) -> str:
+    """Resolve path and ensure it is under base_dir. Returns absolute path or raises ValueError."""
+    base_abs = os.path.abspath(base_dir)
+    resolved = os.path.abspath(file_path)
+    # Resolve symlinks so paths through symlinks outside base_dir are rejected
+    try:
+        real_base = os.path.realpath(base_abs)
+        real_resolved = os.path.realpath(resolved)
+    except OSError:
+        real_base, real_resolved = base_abs, resolved
+    if not real_resolved.startswith(real_base):
+        raise ValueError("path outside allowed directory")
+    return resolved
+
+
 async def handle_start_command(websocket, data: str, manager):
     json_data = json.loads(data[6:])
     (
@@ -296,26 +357,47 @@ def update_environment_variables(config: Dict[str, str]):
 
 
 async def handle_file_upload(file, DOC_PATH: str) -> Dict[str, str]:
-    file_path = os.path.join(DOC_PATH, os.path.basename(file.filename))
+    try:
+        safe_name = secure_filename(file.filename)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid file name: {e}")
+    base, ext = os.path.splitext(safe_name)
+    file_path = os.path.join(DOC_PATH, safe_name)
+    # Avoid overwriting: use test_1.txt, test_2.txt if test.txt exists
+    n = 0
+    while os.path.exists(file_path):
+        n += 1
+        safe_name = f"{base}_{n}{ext}"
+        file_path = os.path.join(DOC_PATH, safe_name)
+    try:
+        validate_file_path(file_path, DOC_PATH)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     print(f"File uploaded to {file_path}")
-
     document_loader = DocumentLoader(DOC_PATH)
     await document_loader.load()
-
-    return {"filename": file.filename, "path": file_path}
+    return {"filename": safe_name, "path": file_path}
 
 
 async def handle_file_deletion(filename: str, DOC_PATH: str) -> JSONResponse:
-    file_path = os.path.join(DOC_PATH, os.path.basename(filename))
-    if os.path.exists(file_path):
-        os.remove(file_path)
-        print(f"File deleted: {file_path}")
-        return JSONResponse(content={"message": "File deleted successfully"})
-    else:
-        print(f"File not found: {file_path}")
+    try:
+        safe_name = secure_filename(filename)
+    except ValueError:
+        return JSONResponse(status_code=400, content={"message": "Invalid file name"})
+    file_path = os.path.join(DOC_PATH, safe_name)
+    try:
+        file_path = validate_file_path(file_path, DOC_PATH)
+    except ValueError:
+        return JSONResponse(status_code=400, content={"message": "Invalid path"})
+    if not os.path.exists(file_path):
         return JSONResponse(status_code=404, content={"message": "File not found"})
+    if not os.path.isfile(file_path):
+        return JSONResponse(status_code=400, content={"message": "not a file"})
+    os.remove(file_path)
+    print(f"File deleted: {file_path}")
+    return JSONResponse(content={"message": "File deleted successfully"})
 
 
 async def execute_multi_agents(manager) -> Any:

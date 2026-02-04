@@ -429,6 +429,9 @@ class GPTResearcher:
             custom_prompt=custom_prompt
         )
 
+        if self.report_source == ReportSource.Web.value and self.visited_urls:
+            report = self.add_references(report, self.visited_urls)
+
         await self._log_event("research", step="report_completed", details={
             "report_length": len(report)
         })

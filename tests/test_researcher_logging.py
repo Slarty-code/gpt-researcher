@@ -13,6 +13,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @pytest.mark.asyncio
+@pytest.mark.skipif(
+    not __import__("os").environ.get("OPENAI_API_KEY"),
+    reason="OPENAI_API_KEY not set; test requires LLM API",
+)
 async def test_researcher_logging():  # Renamed function to be more specific
     """
     Test suite for verifying the researcher's logging infrastructure.

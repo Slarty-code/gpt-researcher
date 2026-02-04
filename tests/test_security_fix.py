@@ -5,6 +5,7 @@ This module tests the security improvements made to file upload and deletion
 operations to prevent path traversal attacks.
 """
 
+import io
 import pytest
 import tempfile
 import os
@@ -151,7 +152,7 @@ class TestHandleFileUpload:
         """Create a mock file object for testing."""
         mock_file = Mock()
         mock_file.filename = "test.txt"
-        mock_file.file = Mock()
+        mock_file.file = io.BytesIO(b"test content")
         return mock_file
     
     @pytest.fixture
@@ -223,9 +224,10 @@ class TestHandleFileUpload:
         with open(existing_path, "w") as f:
             f.write("existing content")
         
-        # Mock DocumentLoader
+        # Mock DocumentLoader and use BytesIO for file content
         import backend.server.server_utils
         original_loader = backend.server.server_utils.DocumentLoader
+        mock_file.file = io.BytesIO(b"new content")
         
         class MockDocumentLoader:
             def __init__(self, path):

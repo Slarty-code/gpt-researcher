@@ -1,4 +1,5 @@
 fastapi>=0.100.0
 uvicorn[standard]>=0.22.0
-# Optional: uncomment for real retrieval with a LightRAG index
-# lightrag-hku>=1.0.0
+# LightRAG for real retrieval (embedding/LLM via env)
+lightrag-hku>=1.4.0
+httpx>=0.25.0

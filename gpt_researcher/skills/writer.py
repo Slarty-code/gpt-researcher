@@ -83,6 +83,10 @@ class ReportGenerator:
         report_params = self.research_params.copy()
         report_params["context"] = context
         report_params["custom_prompt"] = custom_prompt
+        if getattr(self.researcher, "report_source", None) == "web":
+            report_params["allowed_urls"] = list(getattr(self.researcher, "visited_urls", None) or [])
+        else:
+            report_params["allowed_urls"] = []
 
         if self.researcher.report_type == "subtopic_report":
             report_params.update({

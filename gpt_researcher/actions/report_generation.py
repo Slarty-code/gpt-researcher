@@ -271,6 +271,8 @@ async def generate_report(
         report:
 
     """
+    allowed_urls = kwargs.pop("allowed_urls", None) or []
+
     generate_prompt = get_prompt_by_report_type(report_type, prompt_family)
     report = ""
     context_str = format_context_for_report(context)
@@ -280,7 +282,7 @@ async def generate_report(
     elif custom_prompt:
         content = f"{custom_prompt}\n\nContext: {context_str}"
     else:
-        content = f"{generate_prompt(query, context_str, report_source, report_format=cfg.report_format, tone=tone, total_words=cfg.total_words, language=cfg.language)}"
+        content = f"{generate_prompt(query, context_str, report_source, report_format=cfg.report_format, tone=tone, total_words=cfg.total_words, language=cfg.language, allowed_urls=allowed_urls)}"
     try:
         report = await create_chat_completion(
             model=cfg.smart_llm_model,
