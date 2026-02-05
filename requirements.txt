@@ -54,6 +54,7 @@ colorama>=0.4.6
 md2pdf>=1.0.1
 mistune>=3.0.2
 htmldocx>=0.0.6
+reportlab>=4.0.0  # Fallback PDF generator (Windows-friendly, no GTK+ required)
 
 # MCP Support (optional)
 mcp>=1.9.1
