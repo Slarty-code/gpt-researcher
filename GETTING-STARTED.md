@@ -71,7 +71,7 @@ You should see something like:
 
 ```text
 Starting server...
-INFO:     Uvicorn running on http://0.0.0.0:8000
+INFO:     Uvicorn running on http://0.0.0.0:8067
 ```
 
 Leave this terminal open.
@@ -80,7 +80,7 @@ Leave this terminal open.
 
 ## Step 5: Run your first research
 
-1. Open a browser and go to: **http://localhost:8000**
+1. Open a browser and go to: **http://localhost:8067**
 2. You should see the GPT Researcher interface.
 3. Type a research question (e.g. “What are the main causes of inflation in 2024?”) and start the research.
 4. Wait for the report to be generated (it can take a couple of minutes).
@@ -144,8 +144,8 @@ To also search over your own documents (on-prem RAG):
 |--------|-------------|
 | `ModuleNotFoundError` when running `python main.py` | Run `pip install -r requirements.txt` from the project root and try again. |
 | “API key not found” or 401 errors | Check that `.env` is in the project root, variable names are correct (`OPENAI_API_KEY`, `TAVILY_API_KEY`), and there are no extra spaces or quotes. |
-| Port 8000 already in use | Another app is using 8000. Stop it or change the port in `main.py` (e.g. `port=8002`). |
-| Blank or broken page at http://localhost:8000 | Hard refresh (Ctrl+F5 or Cmd+Shift+R) or try another browser. |
+| Port 8067 already in use | Another app is using 8067. Stop it or set `PORT` in `.env` (e.g. `PORT=8068`). |
+| Blank or broken page at http://localhost:8067 | Hard refresh (Ctrl+F5 or Cmd+Shift+R) or try another browser. |
 | RAG returns no results | The RAG service runs without an index by default. To get results, you’d need to add a RAG index (e.g. LightRAG with documents). See [docs/DEX-RESEARCHER-MVP.md](docs/DEX-RESEARCHER-MVP.md). |
 
 ---

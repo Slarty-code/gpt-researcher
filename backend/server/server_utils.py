@@ -110,6 +110,10 @@ class Researcher:
         }
 
 def sanitize_filename(filename: str) -> str:
+    # Normalize path-invalid characters (Windows: \n \r etc. cause Errno 22)
+    filename = filename.replace("\r\n", " ").replace("\n", " ").replace("\r", " ").replace("\t", " ")
+    filename = re.sub(r" +", " ", filename).strip()
+
     # Split into components
     prefix, timestamp, *task_parts = filename.split('_')
     task = '_'.join(task_parts)

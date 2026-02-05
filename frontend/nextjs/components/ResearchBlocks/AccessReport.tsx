@@ -15,7 +15,8 @@ interface AccessReportProps {
 }
 
 const AccessReport: React.FC<AccessReportProps> = ({ accessData, chatBoxSettings, report, onShareClick }) => {
-  const host = getHost();
+  // Backend base URL (works in SSR and client so PDF/DOCX open in new tab on the API server, not the app)
+  const baseUrl = (getHost() || '').replace(/\/+$/, '');
 
   const getReportLink = (dataType: 'pdf' | 'docx' | 'json'): string => {
     // Early return if path is not available
@@ -23,6 +24,7 @@ const AccessReport: React.FC<AccessReportProps> = ({ accessData, chatBoxSettings
       console.warn(`No ${dataType} path provided`);
       return '#';
     }
+    if (!baseUrl) return '#';
 
     let path = (accessData[dataType] as string).trim();
     try {
@@ -32,7 +34,7 @@ const AccessReport: React.FC<AccessReportProps> = ({ accessData, chatBoxSettings
     }
     const cleanPath = path.replace(/^\/+|\/+$/g, '');
     const finalPath = cleanPath.startsWith('outputs/') ? cleanPath : `outputs/${cleanPath}`;
-    return `${host}/${finalPath}`;
+    return `${baseUrl}/${finalPath}`;
   };
 
   // Safety check for accessData

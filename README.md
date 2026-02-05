@@ -112,7 +112,7 @@ See the [Documentation](https://docs.gptr.dev/docs/gpt-researcher/getting-starte
     python -m uvicorn main:app --reload
     ```
 
-Visit [http://localhost:8000](http://localhost:8000) to start.
+Visit [http://localhost:8067](http://localhost:8067) to start. (Port is set by `PORT` in `.env`; default is 8067 in `main.py`.)
 
 For other setups (e.g., Poetry or virtual environments), check the [Getting Started page](https://docs.gptr.dev/docs/gpt-researcher/getting-started).
 
@@ -202,7 +202,7 @@ docker compose up --build
 ```
 
 > **Step 4** - By default, if you haven't uncommented anything in your docker-compose file, this flow will start 2 processes:
- - the Python server running on localhost:8000<br>
+ - the Python server running on localhost:8067<br>
  - the React app running on localhost:3000<br>
 
 Visit localhost:3000 on any browser and enjoy researching!
@@ -219,7 +219,7 @@ export DOC_PATH="./my-docs"
 ```
 
 Step 2: 
- - If you're running the frontend app on localhost:8000, simply select "My Documents" from the "Report Source" Dropdown Options.
+ - If you're running the frontend app on localhost:8067, simply select "My Documents" from the "Report Source" Dropdown Options.
  - If you're running GPT Researcher with the [PIP package](https://docs.tavily.com/guides/gpt-researcher/gpt-researcher#pip-package), pass the `report_source` argument as "local" when you instantiate the `GPTResearcher` class [code sample here](https://docs.gptr.dev/docs/gpt-researcher/context/tailored-research).
 
 

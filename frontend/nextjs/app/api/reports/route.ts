@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-  const backendUrl = process.env.NEXT_PUBLIC_GPTR_API_URL || 'http://localhost:8000';
+  const backendUrl = process.env.NEXT_PUBLIC_GPTR_API_URL || 'http://localhost:8067';
   
   try {
     const { searchParams, pathname } = new URL(request.url);
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const backendUrl = process.env.NEXT_PUBLIC_GPTR_API_URL || 'http://localhost:8000';
+  const backendUrl = process.env.NEXT_PUBLIC_GPTR_API_URL || 'http://localhost:8067';
   
   try {
     // Parse the request body
