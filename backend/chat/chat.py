@@ -75,9 +75,12 @@ class ChatAgentWithMemory:
             self.tavily_client = None
             logger.warning("TAVILY_API_KEY not set - web search in chat will be disabled")
         
-        # Process document and create vector store if not provided
-        if not self.vector_store and False:
-            self._setup_vector_store()
+        # Process document and create vector store if not provided (for RAG over report)
+        if not self.vector_store and self.report:
+            try:
+                self._setup_vector_store()
+            except Exception as e:
+                logger.warning(f"Vector store setup skipped: {e}. Chat will use full report only.")
     
     def _setup_vector_store(self):
         """Setup vector store for document retrieval"""
@@ -195,26 +198,49 @@ class ChatAgentWithMemory:
             tuple: (str: The AI response message, dict: metadata about tool usage)
         """
         try:
-            
-            # Format system prompt with the report context
+            # Optionally retrieve relevant report passages for the current question (RAG)
+            report_section = ""
+            if self.retriever and messages:
+                last_user_message = next(
+                    (m["content"] for m in reversed(messages) if m.get("role") == "user"),
+                    None,
+                )
+                if last_user_message:
+                    try:
+                        docs = self.retriever.invoke(last_user_message)
+                        if docs:
+                            excerpts = [d.page_content for d in docs]
+                            report_section = "Most relevant passages for this question:\n\n" + "\n\n---\n\n".join(excerpts) + "\n\n"
+                    except Exception as e:
+                        logger.warning(f"Retrieval skipped: {e}")
+            report_section += f"Report: {self.report}"
+
+            # Format system prompt with the report context and strict grounding rules
             system_prompt = f"""
-            You are GPT Researcher, an autonomous research agent created by an open source community at https://github.com/assafelovic/gpt-researcher, homepage: https://gptr.dev. 
+            You are GPT Researcher, an autonomous research agent created by an open source community at https://github.com/assafelovic/gpt-researcher, homepage: https://gptr.dev.
             To learn more about GPT Researcher you can suggest to check out: https://docs.gptr.dev.
-            
-            This is a chat about a research report that you created. Answer based on the given context and report.
-            You must include citations to your answer based on the report.
-            
-            You may use the quick_search tool when the user asks about information that might require current data 
-            not found in the report, such as recent events, updated statistics, or news. If there's no report available,
-            you can use the quick_search tool to find information online.
-            
-            You must respond in markdown format. You must make it readable with paragraphs, tables, etc when possible. 
-            Remember that you're answering in a chat not a report.
-            
+
+            This is a chat about a research report that you created. You must follow these rules strictly.
+
+            CLARIFICATION:
+            - If the user's question is ambiguous (e.g. could refer to multiple topics, time periods, or sections in the report, or is too vague to answer precisely from the report), respond with a single short clarifying question. Do not guess or answer from the report until they clarify. Ask only one question at a time and keep it brief.
+            - If the question is clear enough to answer from the report, proceed with your answer under the GROUNDING RULES below. Do not ask for clarification when the intent is already clear.
+
+            GROUNDING RULES:
+            - Answer ONLY from the content of the report below. Do not use general knowledge or invent facts, numbers, or quotes.
+            - If the report does not contain information that answers the question, say clearly: e.g. "That isn't covered in the report" or "The report doesn't discuss that."
+            - When you cite or refer to the report, only refer to content that actually appears in the report. Do not invent section names, quotes, or URLs. Do not fabricate sources. If you cannot point to a specific part of the report that says it, do not add a citation—either answer without a citation or say the report doesn't cover that.
+
+            QUICK_SEARCH TOOL:
+            - Use the quick_search tool ONLY when the user explicitly asks for information that is clearly outside the report (e.g. "latest news," "updated statistics," "what happened after the report"). When using search, state that you are supplementing with external sources.
+            - For normal questions about the report, do NOT call quick_search; answer only from the report.
+
+            You must include citations when your answer is supported by the report—but only cite content that actually exists in the report. You must respond in markdown format. Make it readable with paragraphs, tables, etc when possible. Remember that you're answering in a chat not a report.
+
             Assume the current time is: {datetime.now()}.
-            
-            Report: {self.report}
-            
+
+            {report_section}
+
             """
             
             # Format message history for OpenAI input
