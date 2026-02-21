@@ -10,40 +10,41 @@ services:
       OPENAI_API_KEY: "ollama"
       OPENAI_BASE_URL: "http://host.docker.internal:11434/v1"
       OLLAMA_BASE_URL: "http://host.docker.internal:11434"
-      
+
       # LLM Models (using your Ollama models)
       FAST_LLM: "ollama:qwen3:30B-A3B"          # ~3GB (already configured)
       SMART_LLM: "ollama:qwen3-vl:30B-A3B"         # ~19GB (upgrade from gpt-oss:20b)
       STRATEGIC_LLM: "ollama:qwen3-coder:latest"   # ~18GB (already configured)
-      
+
       # Embedding Model
       EMBEDDING: "ollama:snowflake-arctic-embed2"
       OLLAMA_EMBEDDING_MODEL: "snowflake-arctic-embed2"
       EMBEDDING_PROVIDER: "ollama"
-      
-      # Search Configuration
-      TAVILY_API_KEY: "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"
-      
+
+      # Search Configuration (set in .env or Portainer stack env)
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+      BRAVE_API_KEY: ${BRAVE_API_KEY:-}
+
       # GPT Researcher Configuration - High Quality Research Settings
       MAX_ITERATIONS: "5"
       LOG_LEVEL: "INFO"
       PORT: "8000"
       DOC_PATH: "/usr/src/app/my-docs"
-      
+
       # Token Limits (optimized for each model's context capabilities)
       FAST_TOKEN_LIMIT: "8000"        # qwen2.5vl: 128K context
       SMART_TOKEN_LIMIT: "12000"      # qwen3-vl: Large context
       STRATEGIC_TOKEN_LIMIT: "20000"  # qwen3-coder: 256K context
       SUMMARY_TOKEN_LIMIT: "1000"
-      
+
       # Research Quality Settings
       MAX_SCRAPER_WORKERS: "20"
       MAX_SUBTOPICS: "5"
       TOTAL_WORDS: "2500"
-      
+
       # Apache Tika Configuration for OCR
       TIKA_SERVER_URL: "http://host.docker.internal:9998"
-      
+
       # Optional API keys and image generation (from upstream)
       LANGCHAIN_API_KEY: ""
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
@@ -65,7 +66,7 @@ services:
     restart: always
     ports:
       - 8067:8000
-      
+
   gptr-nextjs:
     pull_policy: build
     image: gptresearcher/gptr-nextjs
@@ -98,6 +99,7 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENAI_BASE_URL: ${OPENAI_BASE_URL}
       TAVILY_API_KEY: ${TAVILY_API_KEY}
+      BRAVE_API_KEY: ${BRAVE_API_KEY}
       LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY}
       LOGGING_LEVEL: INFO
     profiles: ["test"]
@@ -107,7 +109,7 @@ services:
       python -m pytest tests/report-types.py &&
       python -m pytest tests/vector-store.py
       "
-  
+
   discord-bot:
     build:
       context: ./docs/discord-bot
