@@ -12,9 +12,9 @@ services:
       OLLAMA_BASE_URL: "http://host.docker.internal:11434"
       
       # LLM Models (using your Ollama models)
-      FAST_LLM: "ollama:gpt-oss:20b"
-      SMART_LLM: "ollama:gpt-oss:20b"
-      STRATEGIC_LLM: "ollama:qwen3-coder:latest"
+      FAST_LLM: "ollama:qwen3:30B-A3B"          # ~3GB (already configured)
+      SMART_LLM: "ollama:qwen3-vl:30B-A3B"         # ~19GB (upgrade from gpt-oss:20b)
+      STRATEGIC_LLM: "ollama:qwen3-coder:latest"   # ~18GB (already configured)
       
       # Embedding Model
       EMBEDDING: "ollama:snowflake-arctic-embed2"
@@ -24,10 +24,22 @@ services:
       # Search Configuration
       TAVILY_API_KEY: "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"
       
-      # GPT Researcher Configuration
-      LOGGING_LEVEL: "INFO"
+      # GPT Researcher Configuration - High Quality Research Settings
+      MAX_ITERATIONS: "5"
+      LOG_LEVEL: "INFO"
       PORT: "8000"
       DOC_PATH: "/usr/src/app/my-docs"
+      
+      # Token Limits (optimized for each model's context capabilities)
+      FAST_TOKEN_LIMIT: "8000"        # qwen2.5vl: 128K context
+      SMART_TOKEN_LIMIT: "12000"      # qwen3-vl: Large context
+      STRATEGIC_TOKEN_LIMIT: "20000"  # qwen3-coder: 256K context
+      SUMMARY_TOKEN_LIMIT: "1000"
+      
+      # Research Quality Settings
+      MAX_SCRAPER_WORKERS: "20"
+      MAX_SUBTOPICS: "5"
+      TOTAL_WORDS: "2500"
       
       # Apache Tika Configuration for OCR
       TIKA_SERVER_URL: "http://host.docker.internal:9998"
@@ -59,7 +71,9 @@ services:
       LOGGING_LEVEL: INFO
       NEXT_PUBLIC_GA_MEASUREMENT_ID: ${NEXT_PUBLIC_GA_MEASUREMENT_ID}
       NEXT_PUBLIC_GPTR_API_URL: "http://gpt-researcher:8000"
-      PORT: 3037 
+      PORT: 3037
+    depends_on:
+      - gpt-researcher 
     build:
       dockerfile: Dockerfile.dev
       context: frontend/nextjs

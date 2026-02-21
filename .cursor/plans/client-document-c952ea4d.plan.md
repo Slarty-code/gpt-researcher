@@ -1,4 +1,22 @@
-<!-- c952ea4d-3f75-461b-ac1c-29bf53ca08bf 5b9b056b-cd3f-4bc8-acf7-52539a320ac9 -->
+---
+name: Client Document Corpus Review Implementation
+overview: ""
+todos:
+  - id: 18e34d68-1b6b-418a-8b85-42d2572e6c7d
+    content: Create client_document_reviewer.py that integrates GPTResearcher with LegalDocumentEnhancement for the client corpus
+    status: pending
+  - id: 1e2cb535-2b44-4466-ad97-f98809fea24d
+    content: Test document loading from /mnt/data/ragstack/data/raw/_archive to ensure all formats are properly supported
+    status: pending
+  - id: a9d7e8da-66b7-40fd-95ce-509c43d5c53a
+    content: Run test queries (specific questions, extraction, comparative) to validate the implementation
+    status: pending
+  - id: 70abf67a-8e8b-4771-91bc-f1308de47e7f
+    content: Create example scripts showing different query patterns for the client document review
+    status: pending
+isProject: false
+---
+
 # Client Document Corpus Review Implementation
 
 ## Overview
@@ -12,23 +30,32 @@ Configure GPT Researcher to process your client's document corpus at `/mnt/data/
 **Quick Start - Using Web Interface:**
 
 1. Set the `DOC_PATH` environment variable:
-   ```bash
-   export DOC_PATH="/mnt/data/ragstack/data/raw/_archive"
-   ```
 
-2. Configure API keys (add to `.env` file or export):
-   ```bash
+```bash
+   export DOC_PATH="/mnt/data/ragstack/data/raw/_archive"
+   
+
+```
+
+1. Configure API keys (add to `.env` file or export):
+
+```bash
    export OPENAI_API_KEY=your_key_here
    export TAVILY_API_KEY=your_key_here
-   ```
+   
 
-3. Run GPT Researcher from the repo:
-   ```bash
+```
+
+1. Run GPT Researcher from the repo:
+
+```bash
    cd /mnt/data/gpt-researcher
    python -m uvicorn main:app --reload
-   ```
+   
 
-4. Open `http://localhost:8000` and select "My Documents" or "Hybrid" from Report Source dropdown
+```
+
+1. Open `http://localhost:8000` and select "My Documents" or "Hybrid" from Report Source dropdown
 
 **Alternative - Using PIP Package in Python:**
 
@@ -154,10 +181,3 @@ Uses standard GPT Researcher output formats:
 5. Document usage patterns and examples
 
 :-)
-
-### To-dos
-
-- [ ] Create client_document_reviewer.py that integrates GPTResearcher with LegalDocumentEnhancement for the client corpus
-- [ ] Test document loading from /mnt/data/ragstack/data/raw/_archive to ensure all formats are properly supported
-- [ ] Run test queries (specific questions, extraction, comparative) to validate the implementation
-- [ ] Create example scripts showing different query patterns for the client document review

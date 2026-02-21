@@ -7,7 +7,8 @@ from ..actions import (
     generate_report,
     generate_draft_section_titles,
     write_report_introduction,
-    write_conclusion
+    write_conclusion,
+    improve_report_citations,
 )
 
 
@@ -61,9 +62,22 @@ class ReportGenerator:
                 self.researcher.websocket,
             )
 
+        allowed_urls = []
+        for src in self.researcher.get_research_sources():
+            if isinstance(src, dict):
+                u = src.get("href") or src.get("url") or src.get("link")
+                if u and isinstance(u, str):
+                    allowed_urls.append(u.strip())
+        if not allowed_urls and isinstance(context, list):
+            for item in context:
+                if isinstance(item, dict) and item.get("href"):
+                    allowed_urls.append(item["href"].strip())
+        allowed_urls = list(dict.fromkeys(allowed_urls))
+
         report_params = self.research_params.copy()
         report_params["context"] = context
         report_params["custom_prompt"] = custom_prompt
+        report_params["allowed_urls"] = allowed_urls
 
         if self.researcher.report_type == "subtopic_report":
             report_params.update({
@@ -76,6 +90,24 @@ class ReportGenerator:
             report_params["cost_callback"] = self.researcher.add_costs
 
         report = await generate_report(**report_params, **self.researcher.kwargs)
+
+        if getattr(self.researcher.cfg, "enable_citation_improver", False) and allowed_urls:
+            if self.researcher.verbose:
+                await stream_output(
+                    "logs",
+                    "improving_citations",
+                    f"🔗 Improving citations for '{self.researcher.query}'...",
+                    self.researcher.websocket,
+                )
+            report = await improve_report_citations(
+                report=report,
+                allowed_urls=allowed_urls,
+                config=self.researcher.cfg,
+                report_format=self.researcher.cfg.report_format,
+                websocket=self.researcher.websocket,
+                cost_callback=self.researcher.add_costs,
+                **self.researcher.kwargs
+            )
 
         if self.researcher.verbose:
             await stream_output(
