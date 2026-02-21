@@ -2,7 +2,7 @@
 services:
   gpt-researcher:
     pull_policy: build
-    build: 
+    build:
       context: ./
       no_cache: true
     environment:
@@ -44,8 +44,12 @@ services:
       # Apache Tika Configuration for OCR
       TIKA_SERVER_URL: "http://host.docker.internal:9998"
       
-      # Optional API keys
+      # Optional API keys and image generation (from upstream)
       LANGCHAIN_API_KEY: ""
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      IMAGE_GENERATION_ENABLED: ${IMAGE_GENERATION_ENABLED:-false}
+      IMAGE_GENERATION_MODEL: ${IMAGE_GENERATION_MODEL:-gemini-2.0-flash-preview-image-generation}
+      IMAGE_GENERATION_MAX_IMAGES: ${IMAGE_GENERATION_MAX_IMAGES:-3}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: >

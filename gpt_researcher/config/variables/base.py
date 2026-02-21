@@ -33,6 +33,7 @@ class BaseConfig(TypedDict):
     PROMPT_FAMILY: str
     LLM_KWARGS: dict
     EMBEDDING_KWARGS: dict
+    VERBOSE: bool
     DEEP_RESEARCH_CONCURRENCY: int
     DEEP_RESEARCH_DEPTH: int
     DEEP_RESEARCH_BREADTH: int
@@ -43,3 +44,8 @@ class BaseConfig(TypedDict):
     MCP_STRATEGY: str
     REASONING_EFFORT: str
     ENABLE_CITATION_IMPROVER: bool
+    # Image generation settings (from upstream)
+    IMAGE_GENERATION_MODEL: Union[str, None]
+    IMAGE_GENERATION_MAX_IMAGES: int
+    IMAGE_GENERATION_ENABLED: bool
+    IMAGE_GENERATION_STYLE: str  # Image style: "dark", "light", or "auto"
