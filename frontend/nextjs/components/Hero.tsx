@@ -136,14 +136,14 @@ const Hero: FC<THeroProps> = ({
             </div>
           </div>
           
-          {/* Disclaimer text */}
+          {/* Disclaimer text (report §4.5 human over-trust) */}
           <motion.div
             variants={fadeInUp}
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mt-6 text-center px-4"
           >
             <p className="text-gray-400 text-sm font-light">
-              GPT Researcher may make mistakes. Verify important information and check sources.
+              Reports are generated from web and uploaded sources and may contain errors or reflect source bias. Verify critical claims and check sources.
             </p>
           </motion.div>
         </motion.div>

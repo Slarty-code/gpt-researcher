@@ -16,6 +16,7 @@ from ..actions.utils import stream_output
 from ..document import DocumentLoader, LangChainDocumentLoader, OnlineDocumentLoader
 from ..utils.enum import ReportSource, ReportType
 from ..utils.logging_config import get_json_handler
+from ..utils.prompt_safety import sanitize_documents_for_rag
 
 
 class ResearchConductor:
@@ -44,6 +45,13 @@ class ResearchConductor:
         self._mcp_results_cache = None
         # Track MCP query count for balanced mode
         self._mcp_query_count = 0
+
+    def _load_into_vector_store(self, documents):
+        """Sanitize content before indexing (report §4.4 RAG poisoning), then load into vector store."""
+        if not self.researcher.vector_store or not documents:
+            return
+        sanitized = sanitize_documents_for_rag(documents)
+        self.researcher.vector_store.load(sanitized)
 
     async def plan_research(self, query, query_domains=None):
         """Gets the sub-queries from the query
@@ -154,7 +162,7 @@ class ResearchConductor:
             document_data = await DocumentLoader(self.researcher.cfg.doc_path).load()
             self.logger.info(f"Loaded {len(document_data)} documents")
             if self.researcher.vector_store:
-                self.researcher.vector_store.load(document_data)
+                self._load_into_vector_store(document_data)
 
             research_data = await self._get_context_by_web_search(self.researcher.query, document_data, self.researcher.query_domains)
         # Hybrid search including both local documents and web sources
@@ -164,7 +172,7 @@ class ResearchConductor:
             else:
                 document_data = await DocumentLoader(self.researcher.cfg.doc_path).load()
             if self.researcher.vector_store:
-                self.researcher.vector_store.load(document_data)
+                self._load_into_vector_store(document_data)
             docs_context = await self._get_context_by_web_search(self.researcher.query, document_data, self.researcher.query_domains)
             web_context = await self._get_context_by_web_search(self.researcher.query, [], self.researcher.query_domains)
             research_data = self.researcher.prompt_family.join_local_web_documents(docs_context, web_context)
@@ -183,7 +191,7 @@ class ResearchConductor:
                 self.researcher.documents
             ).load()
             if self.researcher.vector_store:
-                self.researcher.vector_store.load(langchain_documents_data)
+                self._load_into_vector_store(langchain_documents_data)
             research_data = await self._get_context_by_web_search(
                 self.researcher.query, langchain_documents_data, self.researcher.query_domains
             )
@@ -221,7 +229,7 @@ class ResearchConductor:
         self.logger.info(f"Scraped content from {len(scraped_content)} URLs")
 
         if self.researcher.vector_store:
-            self.researcher.vector_store.load(scraped_content)
+            self._load_into_vector_store(scraped_content)
 
         context = await self.researcher.context_manager.get_similar_content_by_query(
             self.researcher.query, scraped_content
@@ -421,7 +429,8 @@ class ResearchConductor:
                                     "url": url,
                                     "title": title,
                                     "query": query,
-                                    "source_type": "mcp"
+                                    "source_type": "mcp",
+                                    "trust_level": "untrusted",
                                 }
                                 all_mcp_context.append(context_entry)
                         
@@ -813,7 +822,7 @@ class ResearchConductor:
         scraped_content = await self.researcher.scraper_manager.browse_urls(new_search_urls)
 
         if self.researcher.vector_store:
-            self.researcher.vector_store.load(scraped_content)
+            self._load_into_vector_store(scraped_content)
 
         return scraped_content
 

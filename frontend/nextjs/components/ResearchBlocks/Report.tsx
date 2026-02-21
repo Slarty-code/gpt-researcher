@@ -61,7 +61,9 @@ export default function Report({ answer, researchId }: { answer: string, researc
               </div>
             )}
           </div>
-          
+          <p className="text-xs text-gray-400 font-light pb-2">
+            Reports are generated from web and uploaded sources and may contain errors or reflect source bias. Verify critical claims.
+          </p>
           <div className="flex flex-wrap content-center items-center gap-[15px] pl-5 pr-5">
             <div className="w-full whitespace-pre-wrap text-base font-light leading-[152.5%] text-white log-message">
               {answer ? (

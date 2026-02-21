@@ -42,6 +42,8 @@ class BaseConfig(TypedDict):
     MCP_USE_LLM_ARGS: bool
     MCP_ALLOWED_ROOT_PATHS: List[str]
     MCP_STRATEGY: str
+    MCP_DENIED_TOOL_PATTERNS: List[str]  # Denylist for tool names/descriptions (report §9)
+    MCP_ALLOWED_TOOLS: List[str]  # Optional allowlist; empty = only denylist applied
     REASONING_EFFORT: str
     ENABLE_CITATION_IMPROVER: bool
     RECENCY: Union[str, None]  # pd/pw/pm/py or YYYY-MM-DDtoYYYY-MM-DD; None = no filter
