@@ -4,6 +4,10 @@ TAVILY_API_KEY=
 BRAVE_API_KEY=
 DOC_PATH=./my-docs
 
+# Optional: different host ports when running a second stack (defaults: 8067, 3037)
+# GPTR_HOST_PORT=8068
+# NEXTJS_HOST_PORT=3038
+
 # NEXT_PUBLIC_GPTR_API_URL=http://0.0.0.0:8000  # Defaults to localhost:8000 if not set
 
 # Scraper Configuration

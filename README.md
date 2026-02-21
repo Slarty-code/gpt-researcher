@@ -239,6 +239,14 @@ If that doesn't work, try running it without the dash:
 docker compose up --build
 ```
 
+Settings for alternate ports.
+```bash
+cd /path/to/gpt-researcher
+export GPTR_HOST_PORT=8068
+export NEXTJS_HOST_PORT=3038
+docker compose -p gpt-researcher-new up -d --build
+```
+
 > **Step 4** - By default, if you haven't uncommented anything in your docker-compose file, this flow will start 2 processes:
  - the Python server running on localhost:8000<br>
  - the React app running on localhost:3000<br>
