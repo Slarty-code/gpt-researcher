@@ -22,6 +22,7 @@ def get_retriever(retriever: str):
         - serper: Serper API
         - duckduckgo: DuckDuckGo search
         - bing: Bing search
+        - brave: Brave Search API (env: BRAVE_API_KEY or BRAVE_SEARCH_API_KEY)
         - arxiv: arXiv academic search
         - tavily: Tavily search API
         - exa: Exa search
@@ -59,6 +60,10 @@ def get_retriever(retriever: str):
             from gpt_researcher.retrievers import BingSearch
 
             return BingSearch
+        case "brave":
+            from gpt_researcher.retrievers import BraveSearch
+
+            return BraveSearch
         case "bocha":
             from gpt_researcher.retrievers import BoChaSearch
 

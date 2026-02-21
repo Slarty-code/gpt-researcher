@@ -115,4 +115,34 @@ flowchart LR
   R --> C --> W
 ```
 
+
+
 This keeps the scope aligned with the primary use case: **finding information** (Brave as additional retriever, diversity via MMR, recency) and **producing high-quality, grounded reports** (same allowed_urls + citation improver flow, no Perplexity).
+
+---
+
+## Post-merge review (post main merge)
+
+**Verified:** All code references and integration points above still match the current codebase.
+
+
+| Item                   | Status          | Notes                                                                                                                                                                                                                                |
+| ---------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **§1 MMR**             | Not implemented | `context/compression.py` still uses only `EmbeddingsFilter` + similarity threshold; no MMR. Integration in `compression.py` or `skills/context_manager.py` remains correct.                                                          |
+| **§2 Brave**           | Not implemented | No Brave retriever in `gpt_researcher/retrievers/`. `VALID_RETRIEVERS` in `retrievers/utils.py` is the registration list; add `"brave"` when implementing. LangChain’s Brave is in deps only (test_env), not used by GPT-Researcher. |
+| **§3 Recency**         | Unchanged       | Tavily still the only retriever with recency (`days` in `tavily_search.py`). Bocha has a `freshness` field; no shared `RECENCY` config.                                                                                              |
+| **§4 Query expansion** | Unchanged       | Sub-queries still from `query_processing.py` (`generate_sub_queries`, `plan_research_outline`); no keyword/expansion at retrieval time.                                                                                              |
+| **§5 Cache**           | Unchanged       | No general retriever cache; MCP caching in `skills/researcher.py` as described.                                                                                                                                                      |
+
+
+**Paths:** OpenClaw references (`openclaw/.../mmr.ts`, `web-search.ts`, etc.) resolve in the openclaw workspace. GPT-Researcher paths (`gpt_researcher/context/compression.py`, `retrievers/utils.py`, `actions/query_processing.py`, `skills/context_manager.py`) are current.
+
+**Suggested implementation order** and **Summary diagram** remain valid. No plan changes required; ready to execute when you are.
+
+---
+
+## Implemented (built)
+
+1. **Brave retriever** – `gpt_researcher/retrievers/brave/brave_search.py`: Brave Search API with optional `freshness` / `recency` (pd/pw/pm/py or date range). Env: `BRAVE_API_KEY` or `BRAVE_SEARCH_API_KEY`. Registered in `retrievers/__init__.py`, `retrievers/utils.py`, `actions/retriever.py`.
+2. **MMR re-ranking** – `gpt_researcher/context/mmr.py`: Python port of OpenClaw MMR (Jaccard, λ·relevance − (1−λ)·max_sim). Wired into `context/compression.py` for both `ContextCompressor` and `WrittenContentCompressor`. Env: `ENABLE_MMR_RERANK` (opt-in), `MMR_LAMBDA` (default 0.7).
+3. **Recency config** – Config: `RECENCY` in `config/variables/default.py` and `base.py` (optional: pd/pw/pm/py or date range). Pass-through in `skills/researcher.py` to Tavily (maps to `days`) and Brave (maps to `freshness`). Header `recency` overrides config.

@@ -44,6 +44,7 @@ DEFAULT_CONFIG: BaseConfig = {
     "MCP_STRATEGY": "fast",  # MCP execution strategy: "fast", "deep", "disabled"
     "REASONING_EFFORT": "medium",
     "ENABLE_CITATION_IMPROVER": False,
+    "RECENCY": None,  # Optional: "pd" (day), "pw" (week), "pm" (month), "py" (year), or date range
 
     # Image generation settings (optional - requires GOOGLE_API_KEY, from upstream)
     # Free tier models: gemini-2.5-flash-image, gemini-2.0-flash-exp-image-generation

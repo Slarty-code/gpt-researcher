@@ -44,6 +44,7 @@ class BaseConfig(TypedDict):
     MCP_STRATEGY: str
     REASONING_EFFORT: str
     ENABLE_CITATION_IMPROVER: bool
+    RECENCY: Union[str, None]  # pd/pw/pm/py or YYYY-MM-DDtoYYYY-MM-DD; None = no filter
     # Image generation settings (from upstream)
     IMAGE_GENERATION_MODEL: Union[str, None]
     IMAGE_GENERATION_MAX_IMAGES: int

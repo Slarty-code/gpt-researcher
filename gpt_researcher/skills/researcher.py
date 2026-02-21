@@ -760,10 +760,14 @@ class ResearchConductor:
             if "mcpretriever" in retriever_class.__name__.lower():
                 continue
                 
+            recency = getattr(self.researcher.cfg, "recency", None) or (self.researcher.headers or {}).get("recency")
+            supports_recency = retriever_class.__name__ in ("TavilySearch", "BraveSearch")
             try:
                 # Instantiate the retriever with the sub-query
-                retriever = retriever_class(query, query_domains=query_domains)
-
+                retriever_kwargs = dict(query=query, query_domains=query_domains)
+                if supports_recency and recency:
+                    retriever_kwargs["recency"] = recency
+                retriever = retriever_class(**retriever_kwargs)
                 # Perform the search using the current retriever
                 search_results = await asyncio.to_thread(
                     retriever.search, max_results=self.researcher.cfg.max_search_results_per_query
@@ -826,18 +830,21 @@ class ResearchConductor:
         """
         retriever_name = retriever.__name__
         is_mcp_retriever = "mcpretriever" in retriever_name.lower()
-        
+        recency = getattr(self.researcher.cfg, "recency", None) or (self.researcher.headers or {}).get("recency")
+        supports_recency = retriever_name in ("TavilySearch", "BraveSearch")
         self.logger.info(f"Searching with {retriever_name} for query: {query}")
-        
         try:
             # Instantiate the retriever
-            retriever_instance = retriever(
-                query=query, 
+            retriever_kwargs = dict(
+                query=query,
                 headers=self.researcher.headers,
                 query_domains=self.researcher.query_domains,
                 websocket=self.researcher.websocket if is_mcp_retriever else None,
-                researcher=self.researcher if is_mcp_retriever else None
+                researcher=self.researcher if is_mcp_retriever else None,
             )
+            if supports_recency and recency:
+                retriever_kwargs["recency"] = recency
+            retriever_instance = retriever(**retriever_kwargs)
             
             # Log MCP server configurations if using MCP retriever
             if is_mcp_retriever and self.researcher.verbose:

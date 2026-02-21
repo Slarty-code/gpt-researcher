@@ -1,5 +1,6 @@
 from .arxiv.arxiv import ArxivSearch
 from .bing.bing import BingSearch
+from .brave.brave_search import BraveSearch
 from .custom.custom import CustomRetriever
 from .duckduckgo.duckduckgo import Duckduckgo
 from .google.google import GoogleSearch
@@ -16,6 +17,7 @@ from .bocha.bocha import BoChaSearch
 
 __all__ = [
     "TavilySearch",
+    "BraveSearch",
     "CustomRetriever",
     "Duckduckgo",
     "SearchApiSearch",
@@ -29,5 +31,5 @@ __all__ = [
     "PubMedCentralSearch",
     "ExaSearch",
     "MCPRetriever",
-    "BoChaSearch"
+    "BoChaSearch",
 ]
