@@ -96,6 +96,43 @@ To avoid 404s and hallucinated links, web reports use citation link verification
 
 Result: links in the citation section and reference list point to pages that were actually fetched during research.
 
+## Docker commands
+
+From the repo root (e.g. `dex_research`):
+
+```bash
+# Backend + Next.js UI (default ports: backend 8067, frontend 3037)
+docker compose up -d --build
+
+# With RAG service as well (backend 8067, frontend 3037, RAG 8001)
+docker compose --profile rag up -d --build
+
+# Stop
+docker compose --profile rag down
+```
+
+Ensure a `.env` file exists with at least `OPENAI_API_KEY` and `TAVILY_API_KEY` (or OpenRouter/RAG vars as needed). Optional: `GPTR_HOST_PORT`, `NEXTJS_HOST_PORT` (defaults 8067, 3037).
+
+## Portainer stack
+
+You can run Dex-researcher as a Portainer stack.
+
+1. **Portainer → Stacks → Add Stack**
+2. **Name:** e.g. `dex-researcher`
+3. **Build method:** **Repository**
+4. **Repository URL:** your fork (e.g. `https://github.com/Slarty-code/gpt-researcher.git`)
+5. **Reference:** `refs/heads/master` (or your branch)
+6. **Compose path:** `portainer-stack-dex.yml`
+7. **Environment variables:** add at least:
+   - `OPENAI_API_KEY` = your key
+   - `TAVILY_API_KEY` = your key  
+   Optionally: `OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL`, `RAG_API_URL`, `PRIVATE_MODE`, `GPTR_HOST_PORT`, `NEXTJS_HOST_PORT`
+8. **Deploy the stack**
+
+The file `portainer-stack-dex.yml` uses named volumes (`dex-my-docs`, `dex-outputs`, `dex-logs`) so it works in Portainer without setting `PWD`. To put documents into the app, copy files into the `dex-my-docs` volume (e.g. via Portainer → Volumes → dex-my-docs → Browse, or a one-off container that mounts the volume).
+
+To use the main `docker-compose.yml` in Portainer instead (includes optional RAG service via profile), set **Compose path** to `docker-compose.yml` and add env var `PWD` to the path where the repo is cloned on the host (Portainer may set this automatically when using Repository).
+
 ## Testing checklist
 
 1. **OpenRouter only**: Run a research query with only OpenRouter configured; confirm report is generated and audit/log shows the OpenRouter model.
