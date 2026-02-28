@@ -1079,12 +1079,13 @@ const GPTResearcher = (() => {
     // Store these links for history
     const currentLinks = { pdf, docx, md, json };
 
-    // Helper function to safely update link
+    // Helper function to safely update link (use absolute path for same-origin /outputs/)
     const updateLink = (id, path) => {
       const element = document.getElementById(id);
       if (element && path) {
-        console.log(`Setting ${id} href to:`, path);
-        element.setAttribute('href', path);
+        const href = path.startsWith('/') ? path : '/' + path;
+        console.log(`Setting ${id} href to:`, href);
+        element.setAttribute('href', href);
         element.classList.remove('disabled');
       } else {
         console.warn(`Either element ${id} not found or path not provided`);
