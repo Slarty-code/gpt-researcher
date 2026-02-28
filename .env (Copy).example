@@ -1,7 +1,12 @@
 OPENAI_API_KEY=
-<<<<<<< HEAD:.env.example
+OPENAI_BASE_URL=
 TAVILY_API_KEY=
+BRAVE_API_KEY=
 DOC_PATH=./my-docs
+
+# Optional: different host ports when running a second stack (defaults: 8067, 3037)
+# GPTR_HOST_PORT=8068
+# NEXTJS_HOST_PORT=3038
 
 # Dex-researcher: OpenRouter (use FAST_LLM=openrouter:openai/gpt-4o-mini etc.)
 OPENROUTER_API_KEY=
@@ -23,30 +28,11 @@ AUDIT_LOG_PATH=data/audit.jsonl
 # Scraper Configuration
 # ---------------------
 # Control concurrent scraping and rate limiting to respect API limits
+# MAX_SCRAPER_WORKERS=15
+# SCRAPER_RATE_LIMIT_DELAY=0.0
 
-# Maximum concurrent scraper workers (simultaneous operations)
-# Adjust based on your scraper service limits:
-#   - Firecrawl Free: 2 concurrent browsers
-#   - Firecrawl Hobby: 5 concurrent browsers
-#   - BeautifulSoup/other scrapers: Set based on target site limits
-# Default: 15 (may be too high for rate-limited APIs)
-#MAX_SCRAPER_WORKERS=15
-
-# Rate limiting: minimum seconds between scraper requests
-# Controls request frequency to avoid exceeding API rate limits
-# Calculate as: 60 / requests_per_minute
-# Examples:
-#   - Firecrawl Free (10 req/min): 6.0 seconds
-#   - Firecrawl /scrape (10 req/min): 6.0 seconds
-#   - Custom API (30 req/min): 2.0 seconds
-#   - No rate limit: 0 (default)
-# Note: Works with all scrapers (firecrawl, bs, browser, etc.)
-# Default: 0.0 (no rate limiting)
-#SCRAPER_RATE_LIMIT_DELAY=0.0
-=======
-OPENAI_BASE_URL=
-TAVILY_API_KEY=
-DOC_PATH=./my-docs
-
-# NEXT_PUBLIC_GPTR_API_URL=http://0.0.0.0:8000  # Defaults to localhost:8000 if not set
->>>>>>> 0ce370d6e1ea8375ae093d2020b08bac43f652f4:.env (Copy).example
+# LangChain Tracing (LangSmith) - Enable for enhanced observability
+# LANGCHAIN_TRACING_V2=true
+# LANGCHAIN_ENDPOINT="https://api.smith.langchain.com"
+# LANGCHAIN_API_KEY=
+# LANGCHAIN_PROJECT="gpt-researcher"

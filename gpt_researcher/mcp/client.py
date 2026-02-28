@@ -7,6 +7,23 @@ import asyncio
 import logging
 from typing import List, Dict, Any, Optional
 
+# Keys (case-insensitive) that indicate a secret; never pass to MCP server env (report §5.5).
+_SECRET_ENV_SUBSTRINGS = ("key", "secret", "password", "token", "credential", "auth")
+
+
+def _filter_secrets_from_env(env: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a copy of env with secret-like keys removed. Prevents accidental exposure to MCP servers."""
+    if not env:
+        return {}
+    out = {}
+    for k, v in env.items():
+        k_lower = k.lower()
+        if any(s in k_lower for s in _SECRET_ENV_SUBSTRINGS):
+            logger.debug(f"MCP config: omitting env key '{k}' from server env (secret-like)")
+            continue
+        out[k] = v
+    return out
+
 try:
     from langchain_mcp_adapters.client import MultiServerMCPClient
     HAS_MCP_ADAPTERS = True
@@ -84,10 +101,10 @@ class MCPClientManager:
                         server_args = server_args.split()
                     server_config["args"] = server_args
                     
-                    # Handle environment variables
+                    # Handle environment variables (report §5.5: do not pass secrets to MCP servers)
                     server_env = config.get("env", {})
                     if server_env:
-                        server_config["env"] = server_env
+                        server_config["env"] = _filter_secrets_from_env(server_env)
                         
             # Add authentication if provided
             if config.get("connection_token"):

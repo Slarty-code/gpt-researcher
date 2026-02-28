@@ -10,13 +10,16 @@ from typing import Literal, Optional, Sequence
 
 import requests
 
+# Map shared RECENCY shortcuts to Tavily days (pd=1, pw=7, pm=31, py=365)
+RECENCY_TO_DAYS = {"pd": 1, "pw": 7, "pm": 31, "py": 365}
+
 
 class TavilySearch:
     """
     Tavily API Retriever
     """
 
-    def __init__(self, query, headers=None, topic="general", query_domains=None):
+    def __init__(self, query, headers=None, topic="general", query_domains=None, recency=None, **kwargs):
         """
         Initializes the TavilySearch object.
 
@@ -25,6 +28,7 @@ class TavilySearch:
             headers (dict, optional): Additional headers to include in the request. Defaults to None.
             topic (str, optional): The topic for the search. Defaults to "general".
             query_domains (list, optional): List of domains to include in the search. Defaults to None.
+            recency (str, optional): RECENCY filter: "pd", "pw", "pm", "py" (day/week/month/year). Defaults to None.
         """
         self.query = query
         self.headers = headers or {}
@@ -35,6 +39,8 @@ class TavilySearch:
             "Content-Type": "application/json",
         }
         self.query_domains = query_domains or None
+        recency = recency or (self.headers.get("recency") if isinstance(self.headers, dict) else None)
+        self.days = RECENCY_TO_DAYS.get((recency or "").strip().lower(), 2) if recency else 2
 
     def get_api_key(self):
         """
@@ -110,6 +116,7 @@ class TavilySearch:
                 search_depth="basic",
                 max_results=max_results,
                 topic=self.topic,
+                days=self.days,
                 include_domains=self.query_domains,
             )
             sources = results.get("results", [])

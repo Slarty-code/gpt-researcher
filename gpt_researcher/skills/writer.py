@@ -13,6 +13,7 @@ from ..actions import (
     stream_output,
     write_conclusion,
     write_report_introduction,
+    improve_report_citations,
 )
 from ..utils.llm import construct_subtopics
 
@@ -46,7 +47,7 @@ class ReportGenerator:
             "headers": self.researcher.headers,
         }
 
-    async def write_report(self, existing_headers: list = [], relevant_written_contents: list = [], ext_context=None, custom_prompt="") -> str:
+    async def write_report(self, existing_headers: list = [], relevant_written_contents: list = [], ext_context=None, custom_prompt="", available_images: list = None) -> str:
         """
         Write a report based on existing headers and relevant contents.
 
@@ -55,10 +56,13 @@ class ReportGenerator:
             relevant_written_contents (list): List of relevant written contents.
             ext_context (Optional): External context, if any.
             custom_prompt (str): Custom prompt for the report.
+            available_images (list): Pre-generated images available for embedding.
 
         Returns:
             str: The generated report.
         """
+        available_images = available_images or []
+        
         # send the selected images prior to writing report
         research_images = self.researcher.get_research_images()
         if research_images:
@@ -72,6 +76,16 @@ class ReportGenerator:
             )
 
         context = ext_context or self.researcher.context
+        
+        # Log image availability
+        if available_images and self.researcher.verbose:
+            await stream_output(
+                "logs",
+                "images_available",
+                f"🖼️ {len(available_images)} pre-generated images available for embedding",
+                self.researcher.websocket,
+            )
+        
         if self.researcher.verbose:
             await stream_output(
                 "logs",
@@ -80,6 +94,18 @@ class ReportGenerator:
                 self.researcher.websocket,
             )
 
+        allowed_urls = []
+        for src in self.researcher.get_research_sources():
+            if isinstance(src, dict):
+                u = src.get("href") or src.get("url") or src.get("link")
+                if u and isinstance(u, str):
+                    allowed_urls.append(u.strip())
+        if not allowed_urls and isinstance(context, list):
+            for item in context:
+                if isinstance(item, dict) and item.get("href"):
+                    allowed_urls.append(item["href"].strip())
+        allowed_urls = list(dict.fromkeys(allowed_urls))
+
         report_params = self.research_params.copy()
         report_params["context"] = context
         report_params["custom_prompt"] = custom_prompt
@@ -87,6 +113,7 @@ class ReportGenerator:
             report_params["allowed_urls"] = list(getattr(self.researcher, "visited_urls", None) or [])
         else:
             report_params["allowed_urls"] = []
+        report_params["available_images"] = available_images
 
         if self.researcher.report_type == "subtopic_report":
             report_params.update({
@@ -99,6 +126,24 @@ class ReportGenerator:
             report_params["cost_callback"] = self.researcher.add_costs
 
         report = await generate_report(**report_params, **self.researcher.kwargs)
+
+        if getattr(self.researcher.cfg, "enable_citation_improver", False) and allowed_urls:
+            if self.researcher.verbose:
+                await stream_output(
+                    "logs",
+                    "improving_citations",
+                    f"🔗 Improving citations for '{self.researcher.query}'...",
+                    self.researcher.websocket,
+                )
+            report = await improve_report_citations(
+                report=report,
+                allowed_urls=allowed_urls,
+                config=self.researcher.cfg,
+                report_format=self.researcher.cfg.report_format,
+                websocket=self.researcher.websocket,
+                cost_callback=self.researcher.add_costs,
+                **self.researcher.kwargs
+            )
 
         if self.researcher.verbose:
             await stream_output(

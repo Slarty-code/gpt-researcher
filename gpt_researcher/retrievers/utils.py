@@ -62,6 +62,7 @@ def check_pkg(pkg: str) -> None:
 VALID_RETRIEVERS = [
     "tavily",
     "rag",
+    "brave",
     "custom",
     "duckduckgo",
     "searchapi",
@@ -75,7 +76,7 @@ VALID_RETRIEVERS = [
     "pubmed_central",
     "exa",
     "mcp",
-    "mock"
+    "mock",
 ]
 
 def get_all_retriever_names():

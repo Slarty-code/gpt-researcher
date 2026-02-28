@@ -29,6 +29,7 @@ from ..memory.embeddings import OPENAI_EMBEDDING_MODEL
 from ..prompts import PromptFamily
 from ..utils.costs import estimate_embedding_cost
 from ..vector_store import VectorStoreWrapper
+from .mmr import get_mmr_lambda, is_mmr_enabled, rerank_documents_by_mmr
 from .retriever import SearchAPIRetriever, SectionRetriever
 
 
@@ -154,6 +155,13 @@ class ContextCompressor:
         if cost_callback:
             cost_callback(estimate_embedding_cost(model=OPENAI_EMBEDDING_MODEL, docs=self.documents))
         relevant_docs = await asyncio.to_thread(compressed_docs.invoke, query, **self.kwargs)
+        if is_mmr_enabled() and len(relevant_docs) > 1:
+            relevant_docs = rerank_documents_by_mmr(
+                relevant_docs,
+                content_key="page_content",
+                score_from_rank=True,
+                lambda_=get_mmr_lambda(),
+            )
         return self.prompt_family.pretty_print_docs(relevant_docs, max_results)
 
 
@@ -231,4 +239,11 @@ class WrittenContentCompressor:
         if cost_callback:
             cost_callback(estimate_embedding_cost(model=OPENAI_EMBEDDING_MODEL, docs=self.documents))
         relevant_docs = await asyncio.to_thread(compressed_docs.invoke, query, **self.kwargs)
+        if is_mmr_enabled() and len(relevant_docs) > 1:
+            relevant_docs = rerank_documents_by_mmr(
+                relevant_docs,
+                content_key="page_content",
+                score_from_rank=True,
+                lambda_=get_mmr_lambda(),
+            )
         return self.__pretty_docs_list(relevant_docs, max_results)

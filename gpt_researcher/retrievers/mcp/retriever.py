@@ -299,24 +299,35 @@ class MCPRetriever:
 
     async def _get_all_tools(self) -> List:
         """
-        Get all available tools from MCP servers.
-        
-        Returns:
-            List: All available MCP tools
+        Get all available tools from MCP servers, filtered by tool policy (report §9).
+        Only tools passing the allowlist/denylist are returned.
         """
         if self._all_tools_cache is not None:
             return self._all_tools_cache
             
         try:
+            from ...mcp.tool_policy import filter_tools_by_policy
+
             all_tools = await self.client_manager.get_all_tools()
-            
-            if all_tools:
-                await self.streamer.stream_log(f"📋 Loaded {len(all_tools)} total tools from MCP servers")
-                self._all_tools_cache = all_tools
-                return all_tools
-            else:
+            if not all_tools:
                 await self.streamer.stream_warning("No tools available from MCP servers")
                 return []
+
+            denied = getattr(self.cfg, "mcp_denied_tool_patterns", None) or []
+            allowed = getattr(self.cfg, "mcp_allowed_tools", None) or []
+            filtered = filter_tools_by_policy(
+                all_tools,
+                denied_patterns=denied if denied else None,
+                allowed_patterns=allowed if allowed else None,
+            )
+            if len(filtered) < len(all_tools):
+                await self.streamer.stream_log(
+                    f"📋 MCP tool policy: {len(filtered)} tools allowed (of {len(all_tools)} total)"
+                )
+            else:
+                await self.streamer.stream_log(f"📋 Loaded {len(all_tools)} total tools from MCP servers")
+            self._all_tools_cache = filtered
+            return filtered
                 
         except Exception as e:
             logger.error(f"Error getting MCP tools: {e}")

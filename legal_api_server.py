@@ -38,8 +38,8 @@ app.add_middleware(
 
 # Initialize legal enhancement
 legal_enhancement = LegalDocumentEnhancement(
-    use_semantic_chunking=True,
-    similarity_threshold=0.75
+    use_enhanced_processing=False,  # Disable advanced processing for now
+    use_semantic_chunking=False    # Disable semantic chunking for now
 )
 
 # Pydantic models

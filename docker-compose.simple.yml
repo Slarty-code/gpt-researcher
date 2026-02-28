@@ -1,0 +1,57 @@
+# Simple GPT Researcher with Local Corpus Support
+# Just copy your files to ./my-docs/ and use this configuration
+
+version: '3.8'
+
+services:
+  gpt-researcher:
+    pull_policy: build
+    build: 
+      context: ./
+      no_cache: true
+    environment:
+      # Ollama Configuration
+      OPENAI_API_KEY: "ollama"
+      OPENAI_BASE_URL: "http://host.docker.internal:11434/v1"
+      OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+      
+      # LLM Models (using your Ollama models)
+      FAST_LLM: "ollama:gpt-oss:20b"
+      SMART_LLM: "ollama:gpt-oss:20b"
+      STRATEGIC_LLM: "ollama:qwen3-coder:latest"
+      
+      # Embedding Model
+      EMBEDDING: "ollama:snowflake-arctic-embed2"
+      OLLAMA_EMBEDDING_MODEL: "snowflake-arctic-embed2"
+      EMBEDDING_PROVIDER: "ollama"
+      
+      # Search Configuration
+      TAVILY_API_KEY: "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"
+      
+      # GPT Researcher Configuration
+      LOGGING_LEVEL: "INFO"
+      PORT: "8000"
+      DOC_PATH: "/usr/src/app/my-docs"
+      
+      # Apache Tika Configuration for OCR
+      TIKA_SERVER_URL: "http://host.docker.internal:9998"
+      
+      # Optional API keys
+      LANGCHAIN_API_KEY: ""
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: >
+      /bin/sh -c "
+      pip install langchain-ollama>=0.3.3 &&
+      python -m uvicorn main:app --host 0.0.0.0 --port 8000
+      "
+    volumes:
+      # Simple volume mount - just mount the my-docs directory
+      - ${PWD}/my-docs:/usr/src/app/my-docs:rw
+      - ${PWD}/outputs:/usr/src/app/outputs:rw
+      - ${PWD}/logs:/usr/src/app/logs:rw
+    user: root
+    restart: always
+    ports:
+      - "8067:8000"
+

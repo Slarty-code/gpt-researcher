@@ -16,6 +16,7 @@ from ..actions.utils import stream_output
 from ..document import DocumentLoader, LangChainDocumentLoader, OnlineDocumentLoader
 from ..utils.enum import ReportSource, ReportType
 from ..utils.logging_config import get_json_handler
+from ..utils.prompt_safety import sanitize_documents_for_rag
 
 
 class ResearchConductor:
@@ -44,6 +45,13 @@ class ResearchConductor:
         self._mcp_results_cache = None
         # Track MCP query count for balanced mode
         self._mcp_query_count = 0
+
+    def _load_into_vector_store(self, documents):
+        """Sanitize content before indexing (report §4.4 RAG poisoning), then load into vector store."""
+        if not self.researcher.vector_store or not documents:
+            return
+        sanitized = sanitize_documents_for_rag(documents)
+        self.researcher.vector_store.load(sanitized)
 
     async def plan_research(self, query, query_domains=None):
         """Gets the sub-queries from the query
@@ -154,7 +162,7 @@ class ResearchConductor:
             document_data = await DocumentLoader(self.researcher.cfg.doc_path).load()
             self.logger.info(f"Loaded {len(document_data)} documents")
             if self.researcher.vector_store:
-                self.researcher.vector_store.load(document_data)
+                self._load_into_vector_store(document_data)
 
             research_data = await self._get_context_by_web_search(self.researcher.query, document_data, self.researcher.query_domains)
         # Hybrid search including both local documents and web sources
@@ -164,7 +172,7 @@ class ResearchConductor:
             else:
                 document_data = await DocumentLoader(self.researcher.cfg.doc_path).load()
             if self.researcher.vector_store:
-                self.researcher.vector_store.load(document_data)
+                self._load_into_vector_store(document_data)
             docs_context = await self._get_context_by_web_search(self.researcher.query, document_data, self.researcher.query_domains)
             web_context = await self._get_context_by_web_search(self.researcher.query, [], self.researcher.query_domains)
             research_data = self.researcher.prompt_family.join_local_web_documents(docs_context, web_context)
@@ -183,7 +191,7 @@ class ResearchConductor:
                 self.researcher.documents
             ).load()
             if self.researcher.vector_store:
-                self.researcher.vector_store.load(langchain_documents_data)
+                self._load_into_vector_store(langchain_documents_data)
             research_data = await self._get_context_by_web_search(
                 self.researcher.query, langchain_documents_data, self.researcher.query_domains
             )
@@ -234,7 +242,7 @@ class ResearchConductor:
         self.logger.info(f"Scraped content from {len(scraped_content)} URLs")
 
         if self.researcher.vector_store:
-            self.researcher.vector_store.load(scraped_content)
+            self._load_into_vector_store(scraped_content)
 
         context = await self.researcher.context_manager.get_similar_content_by_query(
             self.researcher.query, scraped_content
@@ -434,7 +442,8 @@ class ResearchConductor:
                                     "url": url,
                                     "title": title,
                                     "query": query,
-                                    "source_type": "mcp"
+                                    "source_type": "mcp",
+                                    "trust_level": "untrusted",
                                 }
                                 all_mcp_context.append(context_entry)
                         
@@ -773,10 +782,14 @@ class ResearchConductor:
             if "mcpretriever" in retriever_class.__name__.lower():
                 continue
                 
+            recency = getattr(self.researcher.cfg, "recency", None) or (self.researcher.headers or {}).get("recency")
+            supports_recency = retriever_class.__name__ in ("TavilySearch", "BraveSearch")
             try:
                 # Instantiate the retriever with the sub-query
-                retriever = retriever_class(query, query_domains=query_domains)
-
+                retriever_kwargs = dict(query=query, query_domains=query_domains)
+                if supports_recency and recency:
+                    retriever_kwargs["recency"] = recency
+                retriever = retriever_class(**retriever_kwargs)
                 # Perform the search using the current retriever
                 search_results = await asyncio.to_thread(
                     retriever.search, max_results=self.researcher.cfg.max_search_results_per_query
@@ -822,7 +835,7 @@ class ResearchConductor:
         scraped_content = await self.researcher.scraper_manager.browse_urls(new_search_urls)
 
         if self.researcher.vector_store:
-            self.researcher.vector_store.load(scraped_content)
+            self._load_into_vector_store(scraped_content)
 
         return scraped_content
 
@@ -839,18 +852,21 @@ class ResearchConductor:
         """
         retriever_name = retriever.__name__
         is_mcp_retriever = "mcpretriever" in retriever_name.lower()
-        
+        recency = getattr(self.researcher.cfg, "recency", None) or (self.researcher.headers or {}).get("recency")
+        supports_recency = retriever_name in ("TavilySearch", "BraveSearch")
         self.logger.info(f"Searching with {retriever_name} for query: {query}")
-        
         try:
             # Instantiate the retriever
-            retriever_instance = retriever(
-                query=query, 
+            retriever_kwargs = dict(
+                query=query,
                 headers=self.researcher.headers,
                 query_domains=self.researcher.query_domains,
                 websocket=self.researcher.websocket if is_mcp_retriever else None,
-                researcher=self.researcher if is_mcp_retriever else None
+                researcher=self.researcher if is_mcp_retriever else None,
             )
+            if supports_recency and recency:
+                retriever_kwargs["recency"] = recency
+            retriever_instance = retriever(**retriever_kwargs)
             
             # Log MCP server configurations if using MCP retriever
             if is_mcp_retriever and self.researcher.verbose:

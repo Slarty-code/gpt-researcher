@@ -32,6 +32,33 @@ async def write_text_to_md(text: str, filename: str = "") -> str:
     await write_to_file(file_path, text)
     return file_path
 
+
+def _preprocess_images_for_pdf(text: str) -> str:
+    """Convert web image URLs to absolute file paths for PDF generation.
+
+    Transforms /outputs/images/... URLs to absolute file:// paths that
+    weasyprint can resolve.
+    """
+    import re
+
+    base_path = os.path.abspath(".")
+
+    # Pattern to find markdown images with /outputs/ URLs
+    def replace_image_url(match):
+        alt_text = match.group(1)
+        url = match.group(2)
+
+        # Convert /outputs/... to absolute path
+        if url.startswith("/outputs/"):
+            abs_path = os.path.join(base_path, url.lstrip("/"))
+            return f"![{alt_text}]({abs_path})"
+        return match.group(0)
+
+    # Match ![alt text](/outputs/images/...)
+    pattern = r'!\[([^\]]*)\]\((/outputs/[^)]+)\)'
+    return re.sub(pattern, replace_image_url, text)
+
+
 async def write_md_to_pdf(text: str, filename: str = "") -> str:
     """Converts Markdown text to a PDF file and returns the file path.
     
@@ -42,7 +69,7 @@ async def write_md_to_pdf(text: str, filename: str = "") -> str:
         text (str): Markdown text to convert.
 
     Returns:
-        str: The encoded file path of the generated PDF, or empty string on failure.
+        str: The file path of the generated PDF, or empty string on failure.
     """
     file_path = f"outputs/{filename[:60]}.pdf"
 
@@ -52,12 +79,18 @@ async def write_md_to_pdf(text: str, filename: str = "") -> str:
         # dependency on the current working directory.
         current_dir = os.path.dirname(os.path.abspath(__file__))
         css_path = os.path.join(current_dir, "styles", "pdf_styles.css")
+        
+        # Preprocess image URLs for PDF compatibility
+        processed_text = _preprocess_images_for_pdf(text)
+        
+        # Set base_url to current directory for resolving any remaining relative paths
+        base_url = os.path.abspath(".")
 
         from md2pdf.core import md2pdf
         md2pdf(file_path,
-               md_content=text,
+               md_content=processed_text,
                css_file_path=css_path,
-               base_url=None)
+               base_url=base_url)
         print(f"Report written to {file_path}")
         return file_path
     except Exception as e:
@@ -139,7 +172,7 @@ async def write_md_to_word(text: str, filename: str = "") -> str:
         text (str): Markdown text to convert.
 
     Returns:
-        str: The encoded file path of the generated DOCX.
+        str: The file path of the generated DOCX.
     """
     file_path = f"outputs/{filename[:60]}.docx"
 
