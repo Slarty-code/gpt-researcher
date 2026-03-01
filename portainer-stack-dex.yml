@@ -10,12 +10,22 @@ services:
     container_name: dex-gpt-researcher
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      OPENAI_BASE_URL: ${OPENAI_BASE_URL}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-http://host.docker.internal:11434/v1}
+      OLLAMA_HOST: ${OLLAMA_HOST:-http://host.docker.internal:11434}
       TAVILY_API_KEY: ${TAVILY_API_KEY}
       BRAVE_API_KEY: ${BRAVE_API_KEY:-}
       LANGCHAIN_API_KEY: ${LANGCHAIN_API_KEY:-}
       EMBEDDING: ${EMBEDDING}
       LOGGING_LEVEL: INFO
+      # In the gpt-researcher service, add to environment:
+      FAST_LLM: ${FAST_LLM:-ollama:qwen3:30b-a3b}
+      SMART_LLM: ${SMART_LLM:-ollama:qwen3-vl:32b}
+      STRATEGIC_LLM: ${STRATEGIC_LLM:-ollama:qwen3-vl:32b-thinking-q4_K_M}
+      RETRIEVER: ${RETRIEVER:-tavily}
+      # If you use file audit:
+      AUDIT_STORAGE: ${AUDIT_STORAGE:-file}
+      AUDIT_LOG_PATH: ${AUDIT_LOG_PATH:-data/audit.jsonl}
+      
       RAG_API_URL: ${RAG_API_URL:-}
       RAG_API_KEY: ${RAG_API_KEY:-}
       PRIVATE_MODE: ${PRIVATE_MODE:-false}
