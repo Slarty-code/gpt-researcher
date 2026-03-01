@@ -53,4 +53,14 @@ Once you've selected the desired version, click on the corresponding link to dow
 
 It's important to check if the version you downgrade to, has a chromedriver available in the official [chrome driver website](https://chromedriver.chromium.org/downloads)
 
+### Error: All connection attempts failed (Ollama)
+
+This error appears when the app uses Ollama for LLM or embeddings but cannot reach the Ollama server (e.g. `httpx.ConnectError: All connection attempts failed`).
+
+- **Ensure Ollama is running** on the host or machine that the URL points to, and listening on the expected port (default 11434).
+- **Set the correct URL** so the app can reach Ollama:
+  - Set `OLLAMA_BASE_URL` (or `OLLAMA_HOST`) to the full base URL, e.g. `http://localhost:11434` when running on the same machine, or `http://host.docker.internal:11434` when the app runs in Docker and Ollama is on the host.
+  - When using Docker on Linux, `host.docker.internal` only works if the stack includes `extra_hosts: - "host.docker.internal:host-gateway"`. Otherwise use the host’s IP (e.g. `http://192.168.1.100:11434`) or run Ollama as a service in the same stack and point to that service (e.g. `http://ollama:11434`).
+- **In Portainer / Swarm / Kubernetes**, `host.docker.internal` may not resolve; use the host’s IP or an in-cluster Ollama service URL instead.
+
 **If none of the above work, you can [try out our hosted beta](https://app.tavily.com)**

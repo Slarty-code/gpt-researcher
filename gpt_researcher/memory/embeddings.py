@@ -139,9 +139,10 @@ class Memory:
             case "ollama":
                 from langchain_ollama import OllamaEmbeddings
 
+                ollama_base_url = os.environ.get("OLLAMA_BASE_URL") or os.environ.get("OLLAMA_HOST") or "http://localhost:11434"
                 _embeddings = OllamaEmbeddings(
                     model=model,
-                    base_url=os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434"),
+                    base_url=ollama_base_url,
                     **embedding_kwargs,
                 )
             case "together":
